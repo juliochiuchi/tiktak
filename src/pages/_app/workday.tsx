@@ -3,8 +3,8 @@ import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { DatePicker } from "@/components/app/date-picker"
-import { PointPage } from "@/pages/_app/point"
-import { TasksPage } from "@/pages/_app/tasks"
+import { PointPage } from "@/components/app/point-page"
+import { TasksPage } from "@/components/app/tasks-page"
 import { parseDayKey, getDayKey } from "@/lib/time"
 
 export const Route = createFileRoute("/_app/workday")({
