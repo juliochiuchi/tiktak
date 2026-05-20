@@ -13,6 +13,10 @@ import { Route as AuthLayoutRouteImport } from './pages/_auth/layout'
 import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
 import { Route as AuthLoginRouteImport } from './pages/_auth/login'
+import { Route as AppWorkdayRouteImport } from './pages/_app/workday'
+import { Route as AppTasksRouteImport } from './pages/_app/tasks'
+import { Route as AppPointRouteImport } from './pages/_app/point'
+import { Route as AppHistoryRouteImport } from './pages/_app/history'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/_auth',
@@ -32,28 +36,69 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => AuthLayoutRoute,
 } as any)
+const AppWorkdayRoute = AppWorkdayRouteImport.update({
+  id: '/workday',
+  path: '/workday',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
+const AppPointRoute = AppPointRouteImport.update({
+  id: '/point',
+  path: '/point',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/history': typeof AppHistoryRoute
+  '/point': typeof AppPointRoute
+  '/tasks': typeof AppTasksRoute
+  '/workday': typeof AppWorkdayRoute
   '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
+  '/history': typeof AppHistoryRoute
+  '/point': typeof AppPointRoute
+  '/tasks': typeof AppTasksRoute
+  '/workday': typeof AppWorkdayRoute
   '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppLayoutRouteWithChildren
   '/_auth': typeof AuthLayoutRouteWithChildren
+  '/_app/history': typeof AppHistoryRoute
+  '/_app/point': typeof AppPointRoute
+  '/_app/tasks': typeof AppTasksRoute
+  '/_app/workday': typeof AppWorkdayRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths: '/' | '/history' | '/point' | '/tasks' | '/workday' | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/_app' | '/_auth' | '/_auth/login' | '/_app/'
+  to: '/' | '/history' | '/point' | '/tasks' | '/workday' | '/login'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_auth'
+    | '/_app/history'
+    | '/_app/point'
+    | '/_app/tasks'
+    | '/_app/workday'
+    | '/_auth/login'
+    | '/_app/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -91,14 +136,50 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthLayoutRoute
     }
+    '/_app/workday': {
+      id: '/_app/workday'
+      path: '/workday'
+      fullPath: '/workday'
+      preLoaderRoute: typeof AppWorkdayRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
+    '/_app/tasks': {
+      id: '/_app/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
+    '/_app/point': {
+      id: '/_app/point'
+      path: '/point'
+      fullPath: '/point'
+      preLoaderRoute: typeof AppPointRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
+    '/_app/history': {
+      id: '/_app/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
   }
 }
 
 interface AppLayoutRouteChildren {
+  AppHistoryRoute: typeof AppHistoryRoute
+  AppPointRoute: typeof AppPointRoute
+  AppTasksRoute: typeof AppTasksRoute
+  AppWorkdayRoute: typeof AppWorkdayRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
+  AppHistoryRoute: AppHistoryRoute,
+  AppPointRoute: AppPointRoute,
+  AppTasksRoute: AppTasksRoute,
+  AppWorkdayRoute: AppWorkdayRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
