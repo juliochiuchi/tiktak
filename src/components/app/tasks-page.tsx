@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { TimeInput } from "@/components/ui/time-input"
 import { Textarea } from "@/components/ui/textarea"
 import { useTaskEntries } from "@/hooks/use-task-entries"
@@ -51,9 +52,12 @@ const createTaskSchema = z.object({
   project: z.string().min(1, "Select a project"),
   date: z.date(),
   duration: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
+  logged: z.boolean().default(false),
+  jiraIssueKey: z.string().default(""),
+  branchName: z.string().default(""),
 })
 
-type CreateTaskValues = z.infer<typeof createTaskSchema>
+type CreateTaskValues = z.input<typeof createTaskSchema>
 
 function durationToMinutes(value: string) {
   const [hoursText, minutesText] = value.split(":")
@@ -73,6 +77,7 @@ export function TasksPage({
   activeDayKey,
 }: TasksPageProps) {
   const { entries, addEntry, removeEntry, updateEntry } = useTaskEntries()
+  const isWorkdayView = Boolean(activeDayKey)
   const [open, setOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const queryKey = activeDayKey ?? "__all__"
@@ -106,8 +111,13 @@ export function TasksPage({
       project: projects[0] ?? "General",
       date: activeDate ?? new Date(),
       duration: "",
+      logged: false,
+      jiraIssueKey: "",
+      branchName: "",
     },
   })
+
+  const logged = form.watch("logged") ?? false
 
   React.useEffect(() => {
     if (form.getValues("project")) return
@@ -121,6 +131,9 @@ export function TasksPage({
       project: projects[0] ?? "General",
       date: activeDate ?? new Date(),
       duration: "",
+      logged: false,
+      jiraIssueKey: "",
+      branchName: "",
     })
     setOpen(true)
   }
@@ -139,6 +152,9 @@ export function TasksPage({
       project: entry.project,
       date: occurredDate,
       duration,
+      logged: entry.logged ?? false,
+      jiraIssueKey: entry.jiraIssueKey ?? "",
+      branchName: entry.branchName ?? "",
     })
     setOpen(true)
   }
@@ -184,7 +200,7 @@ export function TasksPage({
               New task
             </Button>
           </Dialog.Trigger>
-          <DialogContent>
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId ? "Edit task" : "New task"}</DialogTitle>
               <DialogDescription>
@@ -226,6 +242,11 @@ export function TasksPage({
                     occurredAt: occurredAt.toISOString(),
                     date: getDayKey(occurredAt),
                     durationMinutes,
+                    logged: Boolean(values.logged),
+                    jiraIssueKey: values.logged
+                      ? (values.jiraIssueKey ?? "").trim()
+                      : "",
+                    branchName: (values.branchName ?? "").trim(),
                   }
 
                   if (editingId) {
@@ -276,17 +297,84 @@ export function TasksPage({
                   )}
                 />
 
+                <div className="flex flex-col gap-4 sm:flex-row">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            value={field.value}
+                            onChange={field.onChange}
+                            className="h-11 rounded-2xl"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="duration"
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormLabel>Time spent</FormLabel>
+                        <FormControl>
+                          <TimeInput
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="HH:MM"
+                            className="h-11 rounded-2xl"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
-                  name="date"
+                  name="logged"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between gap-4 rounded-2xl border border-input p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel>Logged</FormLabel>
+                        <div className="text-sm text-muted-foreground">
+                          Already logged in Jira
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? false}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked)
+                            if (!checked) {
+                              form.setValue("jiraIssueKey", "", { shouldValidate: true })
+                            }
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="jiraIssueKey"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel>Jira issue</FormLabel>
                       <FormControl>
-                        <DatePicker
-                          value={field.value}
-                          onChange={field.onChange}
+                        <Input
+                          placeholder="E.g. ABC-123"
                           className="h-11 rounded-2xl"
+                          disabled={!logged}
+                          {...field}
+                          value={field.value ?? ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -296,16 +384,16 @@ export function TasksPage({
 
                 <FormField
                   control={form.control}
-                  name="duration"
+                  name="branchName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Time spent</FormLabel>
+                      <FormLabel>Branch</FormLabel>
                       <FormControl>
-                        <TimeInput
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="HH:MM"
+                        <Input
+                          placeholder="E.g. feature/ABC-123-task-logging"
                           className="h-11 rounded-2xl"
+                          {...field}
+                          value={field.value ?? ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -380,57 +468,132 @@ export function TasksPage({
                 <div className="space-y-3">
                   {group.entries.map((entry) => (
                     <Card key={entry.id} className="overflow-hidden">
-                      <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="space-y-2">
-                          <div className="text-sm font-semibold">
-                            {entry.description}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <Badge className="bg-primary/10 text-primary">
-                              {entry.project}
+                      {(() => {
+                        const jiraBadge =
+                          entry.logged && entry.jiraIssueKey ? (
+                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                              {entry.jiraIssueKey}
                             </Badge>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Clock className="size-3.5" />
-                              {dayjs(entry.date, "YYYY-MM-DD").format("DD/MM")}
+                          ) : null
+
+                        const branchBadge = entry.branchName ? (
+                          <Badge className="max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap bg-muted font-mono text-muted-foreground">
+                            {entry.branchName}
+                          </Badge>
+                        ) : null
+
+                        const content = isWorkdayView ? (
+                          <div className="min-w-0 space-y-2">
+                            <div className="break-words text-sm font-semibold">
+                              {entry.description}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className="bg-primary/10 text-primary">
+                                {entry.project}
+                              </Badge>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="size-3.5" />
+                                {dayjs(entry.date, "YYYY-MM-DD").format("DD/MM")}
+                              </div>
+                            </div>
+                            {jiraBadge || branchBadge ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                {jiraBadge}
+                                {branchBadge}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <div className="break-words text-sm font-semibold">
+                              {entry.description}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className="bg-primary/10 text-primary">
+                                {entry.project}
+                              </Badge>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <Clock className="size-3.5" />
+                                {dayjs(entry.date, "YYYY-MM-DD").format("DD/MM")}
+                              </div>
+                              {jiraBadge}
+                              {branchBadge}
                             </div>
                           </div>
-                        </div>
+                        )
 
-                        <div className="flex items-center justify-start gap-2 sm:justify-end">
-                          <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
-                            <Clock className="size-4 text-muted-foreground" />
-                            {formatDurationMinutes(entry.durationMinutes)}
-                          </div>
+                        const actionItems = (
+                          <>
+                            <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                              <Clock className="size-4 text-muted-foreground" />
+                              {formatDurationMinutes(entry.durationMinutes)}
+                            </div>
 
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-xl"
-                            onClick={() => openEdit(entry.id)}
-                            aria-label="Edit"
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
+                            <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                              <span className="text-xs text-muted-foreground">
+                                Logged
+                              </span>
+                              <Switch
+                                checked={entry.logged}
+                                onCheckedChange={(checked) =>
+                                  updateEntry(entry.id, {
+                                    logged: checked,
+                                    jiraIssueKey: checked ? entry.jiraIssueKey : "",
+                                  })
+                                }
+                              />
+                            </div>
 
-                          <ConfirmDialog
-                            title="Delete task?"
-                            description="This action cannot be undone."
-                            confirmLabel="Delete"
-                            onConfirm={() => removeEntry(entry.id)}
-                          >
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              className="rounded-xl text-destructive hover:text-destructive"
-                              aria-label="Delete"
+                              className="rounded-xl"
+                              onClick={() => openEdit(entry.id)}
+                              aria-label="Edit"
                             >
-                              <Trash2 className="size-4" />
+                              <Pencil className="size-4" />
                             </Button>
-                          </ConfirmDialog>
-                        </div>
-                      </CardContent>
+
+                            <ConfirmDialog
+                              title="Delete task?"
+                              description="This action cannot be undone."
+                              confirmLabel="Delete"
+                              onConfirm={() => removeEntry(entry.id)}
+                            >
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="rounded-xl text-destructive hover:text-destructive"
+                                aria-label="Delete"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </ConfirmDialog>
+                          </>
+                        )
+
+                        if (isWorkdayView) {
+                          return (
+                            <CardContent className="space-y-4 p-6">
+                              {content}
+                              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-3">
+                                {actionItems}
+                              </div>
+                            </CardContent>
+                          )
+                        }
+
+                        return (
+                          <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
+                            {content}
+                            <div className="flex flex-wrap items-center justify-start gap-2 sm:ml-auto sm:justify-end">
+                              {actionItems}
+                            </div>
+                          </CardContent>
+                        )
+                      })()}
                     </Card>
                   ))}
                 </div>

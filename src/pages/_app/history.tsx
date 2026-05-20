@@ -295,10 +295,38 @@ function HistoryPage() {
                                         <Badge className="bg-primary/10 text-primary">
                                           {task.project}
                                         </Badge>
-                                        <div className="text-xs text-muted-foreground">
-                                          {dayjs(task.createdAt).format("HH:mm")}
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                          <Clock className="size-3.5" />
+                                          {dayjs(task.createdAt).format("DD/MM")}
                                         </div>
+                                        {task.logged ? (
+                                          <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
+                                            Logged
+                                          </Badge>
+                                        ) : (
+                                          <Badge className="bg-muted text-muted-foreground">
+                                            Not logged
+                                          </Badge>
+                                        )}
                                       </div>
+                                      {task.logged && task.jiraIssueKey ? (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                                            Jira {task.jiraIssueKey}
+                                          </Badge>
+                                          {task.branchName ? (
+                                            <Badge className="max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap bg-muted font-mono text-muted-foreground">
+                                              {task.branchName}
+                                            </Badge>
+                                          ) : null}
+                                        </div>
+                                      ) : task.branchName ? (
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <Badge className="max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap bg-muted font-mono text-muted-foreground">
+                                            {task.branchName}
+                                          </Badge>
+                                        </div>
+                                      ) : null}
                                     </div>
                                     <div className="shrink-0 text-sm font-medium">
                                       {formatDurationMinutes(task.durationMinutes)}

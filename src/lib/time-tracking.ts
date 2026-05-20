@@ -15,6 +15,9 @@ export type TaskEntry = {
   date: string
   occurredAt: string
   durationMinutes: number
+  logged: boolean
+  jiraIssueKey: string
+  branchName: string
   createdAt: string
 }
 
@@ -33,6 +36,9 @@ export const taskEntrySchema = z.object({
   date: z.string(),
   occurredAt: z.string(),
   durationMinutes: z.number(),
+  logged: z.boolean().default(false),
+  jiraIssueKey: z.string().default(""),
+  branchName: z.string().default(""),
   createdAt: z.string(),
 })
 

@@ -9,6 +9,9 @@ type CreateTaskInput = {
   date: string
   occurredAt: string
   durationMinutes: number
+  logged: boolean
+  jiraIssueKey: string
+  branchName: string
 }
 
 export function useTaskEntries() {
