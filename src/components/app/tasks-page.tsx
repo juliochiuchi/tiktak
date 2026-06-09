@@ -1,6 +1,6 @@
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Clock, Pencil, Plus, Search, Trash2 } from "lucide-react"
+import { Clock, Copy, Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -36,6 +36,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { TimeInput } from "@/components/ui/time-input"
 import { Textarea } from "@/components/ui/textarea"
+import { useProjects } from "@/hooks/use-projects"
+import { useToast } from "@/hooks/use-toast"
 import { useTaskEntries } from "@/hooks/use-task-entries"
 import { groupTasksByDate, getMinutesForDate } from "@/lib/tasks"
 import {
@@ -67,6 +69,49 @@ function durationToMinutes(value: string) {
   return Math.max(0, hours) * 60 + Math.min(59, Math.max(0, minutes))
 }
 
+function getTaskDescriptionText(description: string) {
+  return description.trim()
+}
+
+function getGroupedDescriptions(
+  entries: Array<{
+    description: string
+  }>
+) {
+  return entries
+    .map((entry) => getTaskDescriptionText(entry.description))
+    .filter(Boolean)
+    .join("\n")
+}
+
+async function copyToClipboard(value: string) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return
+  }
+
+  if (typeof document === "undefined") {
+    throw new Error("Clipboard unavailable")
+  }
+
+  const textarea = document.createElement("textarea")
+  textarea.value = value
+  textarea.setAttribute("readonly", "")
+  textarea.style.position = "fixed"
+  textarea.style.opacity = "0"
+  textarea.style.pointerEvents = "none"
+
+  document.body.appendChild(textarea)
+  textarea.select()
+
+  const didCopy = document.execCommand("copy")
+  document.body.removeChild(textarea)
+
+  if (!didCopy) {
+    throw new Error("Clipboard unavailable")
+  }
+}
+
 type TasksPageProps = {
   headingLevel?: "h1" | "h2"
   activeDayKey?: string
@@ -77,9 +122,14 @@ export function TasksPage({
   activeDayKey,
 }: TasksPageProps) {
   const { entries, addEntry, removeEntry, updateEntry } = useTaskEntries()
+  const { projects, addProject } = useProjects()
+  const { toast } = useToast()
   const isWorkdayView = Boolean(activeDayKey)
   const [open, setOpen] = React.useState(false)
   const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [isCreatingProject, setIsCreatingProject] = React.useState(false)
+  const [newProjectName, setNewProjectName] = React.useState("")
+  const [isSavingProject, setIsSavingProject] = React.useState(false)
   const queryKey = activeDayKey ?? "__all__"
   const [queryByKey, setQueryByKey] = React.useState<Record<string, string>>({})
   const query = queryByKey[queryKey] ?? ""
@@ -99,16 +149,19 @@ export function TasksPage({
     [activeDayKey, entries]
   )
 
-  const projects = React.useMemo(
-    () => ["Website Redesign", "Mobile App", "Internal Tools"],
-    []
+  const projectOptions = React.useMemo(
+    () =>
+      [...new Set([...projects.map((project) => project.name), ...entries.map((entry) => entry.project.trim())])]
+        .filter(Boolean)
+        .sort((a, b) => a.localeCompare(b)),
+    [entries, projects]
   )
 
   const form = useForm<CreateTaskValues>({
     resolver: zodResolver(createTaskSchema),
     defaultValues: {
       description: "",
-      project: projects[0] ?? "General",
+      project: projectOptions[0] ?? "",
       date: activeDate ?? new Date(),
       duration: "",
       logged: false,
@@ -121,14 +174,17 @@ export function TasksPage({
 
   React.useEffect(() => {
     if (form.getValues("project")) return
-    form.setValue("project", projects[0] ?? "General", { shouldValidate: true })
-  }, [form, projects])
+    if (!projectOptions[0]) return
+    form.setValue("project", projectOptions[0], { shouldValidate: true })
+  }, [form, projectOptions])
 
   function openCreate() {
     setEditingId(null)
+    setIsCreatingProject(false)
+    setNewProjectName("")
     form.reset({
       description: "",
-      project: projects[0] ?? "General",
+      project: projectOptions[0] ?? "",
       date: activeDate ?? new Date(),
       duration: "",
       logged: false,
@@ -147,6 +203,8 @@ export function TasksPage({
     const duration = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
 
     setEditingId(id)
+    setIsCreatingProject(false)
+    setNewProjectName("")
     form.reset({
       description: entry.description,
       project: entry.project,
@@ -157,6 +215,39 @@ export function TasksPage({
       branchName: entry.branchName ?? "",
     })
     setOpen(true)
+  }
+
+  async function handleCreateProject() {
+    const normalizedName = newProjectName.trim()
+    if (!normalizedName) {
+      toast({
+        title: "Informe o nome do projeto",
+        description: "Digite um nome para criar o projeto.",
+        variant: "error",
+      })
+      return
+    }
+
+    setIsSavingProject(true)
+    try {
+      const saved = await addProject(normalizedName)
+      form.setValue("project", saved.name, { shouldValidate: true, shouldDirty: true })
+      setNewProjectName("")
+      setIsCreatingProject(false)
+      toast({
+        title: "Projeto criado",
+        description: saved.name,
+        variant: "success",
+      })
+    } catch {
+      toast({
+        title: "Nao foi possivel criar o projeto",
+        description: "Tente novamente.",
+        variant: "error",
+      })
+    } finally {
+      setIsSavingProject(false)
+    }
   }
 
   const filteredEntries = React.useMemo(() => {
@@ -173,6 +264,56 @@ export function TasksPage({
   const groups = React.useMemo(
     () => groupTasksByDate(filteredEntries),
     [filteredEntries]
+  )
+
+  const handleCopyDescription = React.useCallback(
+    async (description: string) => {
+      const text = getTaskDescriptionText(description)
+      if (!text) return
+
+      try {
+        await copyToClipboard(text)
+        toast({
+          title: "Descricao copiada",
+          description: text,
+          variant: "success",
+        })
+      } catch {
+        toast({
+          title: "Nao foi possivel copiar",
+          description: "Tente novamente.",
+          variant: "error",
+        })
+      }
+    },
+    [toast]
+  )
+
+  const handleCopyGroupDescriptions = React.useCallback(
+    async (
+      groupEntries: Array<{
+        description: string
+      }>
+    ) => {
+      const text = getGroupedDescriptions(groupEntries)
+      if (!text) return
+
+      try {
+        await copyToClipboard(text)
+        toast({
+          title: "Descricoes copiadas",
+          description: `${groupEntries.length} task(s) copiadas.`,
+          variant: "success",
+        })
+      } catch {
+        toast({
+          title: "Nao foi possivel copiar",
+          description: "Tente novamente.",
+          variant: "error",
+        })
+      }
+    },
+    [toast]
   )
 
   return (
@@ -200,7 +341,7 @@ export function TasksPage({
               New task
             </Button>
           </Dialog.Trigger>
-          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingId ? "Edit task" : "New task"}</DialogTitle>
               <DialogDescription>
@@ -211,7 +352,7 @@ export function TasksPage({
             <Form {...form}>
               <form
                 className="mt-4 space-y-4"
-                onSubmit={form.handleSubmit((values) => {
+                onSubmit={form.handleSubmit(async (values) => {
                   const durationMinutes = durationToMinutes(values.duration)
                   if (durationMinutes <= 0) {
                     form.setError("duration", {
@@ -250,9 +391,37 @@ export function TasksPage({
                   }
 
                   if (editingId) {
-                    updateEntry(editingId, payload)
+                    try {
+                      await updateEntry(editingId, payload)
+                      toast({
+                        title: "Task atualizada",
+                        description: payload.description,
+                        variant: "success",
+                      })
+                    } catch {
+                      toast({
+                        title: "Nao foi possivel atualizar",
+                        description: "Tente novamente.",
+                        variant: "error",
+                      })
+                      return
+                    }
                   } else {
-                    addEntry(payload)
+                    try {
+                      await addEntry(payload)
+                      toast({
+                        title: "Task criada",
+                        description: payload.description,
+                        variant: "success",
+                      })
+                    } catch {
+                      toast({
+                        title: "Nao foi possivel criar",
+                        description: "Tente novamente.",
+                        variant: "error",
+                      })
+                      return
+                    }
                   }
 
                   setOpen(false)
@@ -284,7 +453,7 @@ export function TasksPage({
                             <SelectValue placeholder="Select a project" />
                           </SelectTrigger>
                           <SelectContent>
-                            {projects.map((project) => (
+                            {projectOptions.map((project) => (
                               <SelectItem key={project} value={project}>
                                 {project}
                               </SelectItem>
@@ -292,6 +461,46 @@ export function TasksPage({
                           </SelectContent>
                         </Select.Root>
                       </FormControl>
+                      <div className="mt-3 space-y-3 rounded-2xl border border-dashed border-border p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-sm text-muted-foreground">
+                            Nao encontrou o projeto na lista?
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsCreatingProject((current) => !current)}
+                          >
+                            <Plus className="size-4" />
+                            {isCreatingProject ? "Cancelar" : "Criar projeto"}
+                          </Button>
+                        </div>
+
+                        {isCreatingProject ? (
+                          <div className="flex flex-col gap-3 sm:flex-row">
+                            <Input
+                              value={newProjectName}
+                              onChange={(event) => setNewProjectName(event.target.value)}
+                              placeholder="Nome do projeto"
+                              className="h-11 rounded-2xl"
+                              onKeyDown={(event) => {
+                                if (event.key !== "Enter") return
+                                event.preventDefault()
+                                void handleCreateProject()
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              className="h-11 rounded-2xl px-5"
+                              onClick={() => void handleCreateProject()}
+                              disabled={isSavingProject}
+                            >
+                              Salvar projeto
+                            </Button>
+                          </div>
+                        ) : null}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -456,12 +665,24 @@ export function TasksPage({
 
             return (
               <section key={group.date} className="space-y-3">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="text-sm font-medium text-muted-foreground">
                     {formatDateSection(groupDate)}
                   </div>
-                  <div className="text-sm font-medium text-primary">
-                    {formatDurationMinutes(groupMinutes)} total
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => handleCopyGroupDescriptions(group.entries)}
+                    >
+                      <Copy className="size-3.5" />
+                      Copy all
+                    </Button>
+                    <div className="text-sm font-medium text-primary">
+                      {formatDurationMinutes(groupMinutes)} total
+                    </div>
                   </div>
                 </div>
 
@@ -484,7 +705,7 @@ export function TasksPage({
 
                         const content = isWorkdayView ? (
                           <div className="min-w-0 space-y-2">
-                            <div className="break-words text-sm font-semibold">
+                            <div className="wrap-break-word text-sm font-semibold">
                               {entry.description}
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
@@ -505,7 +726,7 @@ export function TasksPage({
                           </div>
                         ) : (
                           <div className="min-w-0 flex-1 space-y-2">
-                            <div className="break-words text-sm font-semibold">
+                            <div className="wrap-break-word text-sm font-semibold">
                               {entry.description}
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
@@ -535,14 +756,33 @@ export function TasksPage({
                               </span>
                               <Switch
                                 checked={entry.logged}
-                                onCheckedChange={(checked) =>
-                                  updateEntry(entry.id, {
-                                    logged: checked,
-                                    jiraIssueKey: checked ? entry.jiraIssueKey : "",
-                                  })
-                                }
+                                onCheckedChange={async (checked) => {
+                                  try {
+                                    await updateEntry(entry.id, {
+                                      logged: checked,
+                                      jiraIssueKey: checked ? entry.jiraIssueKey : "",
+                                    })
+                                  } catch {
+                                    toast({
+                                      title: "Nao foi possivel atualizar",
+                                      description: "Tente novamente.",
+                                      variant: "error",
+                                    })
+                                  }
+                                }}
                               />
                             </div>
+
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              className="rounded-xl"
+                              onClick={() => handleCopyDescription(entry.description)}
+                              aria-label="Copy description"
+                            >
+                              <Copy className="size-4" />
+                            </Button>
 
                             <Button
                               type="button"
@@ -559,7 +799,22 @@ export function TasksPage({
                               title="Delete task?"
                               description="This action cannot be undone."
                               confirmLabel="Delete"
-                              onConfirm={() => removeEntry(entry.id)}
+                              onConfirm={async () => {
+                                try {
+                                  await removeEntry(entry.id)
+                                  toast({
+                                    title: "Task excluída",
+                                    description: entry.description,
+                                    variant: "success",
+                                  })
+                                } catch {
+                                  toast({
+                                    title: "Nao foi possivel excluir",
+                                    description: "Tente novamente.",
+                                    variant: "error",
+                                  })
+                                }
+                              }}
                             >
                               <Button
                                 type="button"

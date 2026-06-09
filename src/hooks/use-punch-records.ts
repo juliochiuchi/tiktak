@@ -1,40 +1,29 @@
-import { useLocalStorageState } from "@/hooks/use-local-storage-state"
+import * as React from "react"
+import type { PunchRecord, PunchType } from "@/lib/time-tracking"
 import {
-  type PunchRecord,
-  type PunchType,
-  createId,
-  punchRecordsSchema,
-} from "@/lib/time-tracking"
-
-const storageKey = "tiktak.punch-records.v1"
+  addPunchRecord,
+  editPunchRecord,
+  getPunchRecordsSnapshot,
+  reloadPunchRecords,
+  removePunchRecord,
+  subscribePunchRecords,
+} from "@/stores/timeTrackingStore"
 
 export function usePunchRecords() {
-  const [records, setRecords] = useLocalStorageState<PunchRecord[]>({
-    key: storageKey,
-    defaultValue: [],
-    schema: punchRecordsSchema,
-  })
+  const snapshot = React.useSyncExternalStore(
+    subscribePunchRecords,
+    getPunchRecordsSnapshot,
+    getPunchRecordsSnapshot
+  )
 
-  function addRecord(type: PunchType, timestamp: Date = new Date()) {
-    const record: PunchRecord = {
-      id: createId(),
-      type,
-      timestamp: timestamp.toISOString(),
-    }
-
-    setRecords((previous) => [record, ...previous])
-    return record
+  return {
+    records: snapshot.records,
+    isLoading: snapshot.isLoading,
+    error: snapshot.error,
+    reload: reloadPunchRecords,
+    addRecord: (type: PunchType, timestamp?: Date) => addPunchRecord(type, timestamp),
+    updateRecord: (id: string, updates: Partial<Omit<PunchRecord, "id">>) =>
+      editPunchRecord(id, updates),
+    removeRecord: (id: string) => removePunchRecord(id),
   }
-
-  function updateRecord(id: string, updates: Partial<Omit<PunchRecord, "id">>) {
-    setRecords((previous) =>
-      previous.map((record) => (record.id === id ? { ...record, ...updates } : record))
-    )
-  }
-
-  function removeRecord(id: string) {
-    setRecords((previous) => previous.filter((record) => record.id !== id))
-  }
-
-  return { records, setRecords, addRecord, updateRecord, removeRecord }
 }

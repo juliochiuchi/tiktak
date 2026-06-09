@@ -29,12 +29,12 @@ const items: NavItem[] = [
 export function TopNav() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/70 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-3 sm:px-4">
         <div className="flex items-center gap-2">
           <div className="grid size-8 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm">
             <Clock className="size-4" />
           </div>
-          <span className="text-sm font-semibold tracking-tight">Time</span>
+          <span className="text-sm font-semibold tracking-tight">TikTak</span>
         </div>
 
         <div className="flex items-center gap-2">

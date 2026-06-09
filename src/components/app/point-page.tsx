@@ -2,10 +2,11 @@ import * as React from "react"
 import { Check, LogIn, LogOut, Pencil, Trash2, X } from "lucide-react"
 
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
-import { DatePicker } from "@/components/app/date-picker"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { TimeInput } from "@/components/ui/time-input"
+import { useToast } from "@/hooks/use-toast"
 import { usePunchRecords } from "@/hooks/use-punch-records"
 import {
   getRecordsForDay,
@@ -30,6 +31,7 @@ type PointPageProps = {
 
 export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps) {
   const { records, addRecord, removeRecord, updateRecord } = usePunchRecords()
+  const { toast } = useToast()
   const [now, setNow] = React.useState(() => new Date())
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [draftType, setDraftType] = React.useState<"in" | "out">("in")
@@ -68,7 +70,13 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
     setEditingId(null)
   }
 
-  function saveEdit() {
+  function handleEditKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return
+    event.preventDefault()
+    void saveEdit()
+  }
+
+  async function saveEdit() {
     if (!editingId) return
     const time = parseTimeInput(draftTime)
     if (!time) return
@@ -79,11 +87,24 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
       .millisecond(0)
       .toDate()
 
-    updateRecord(editingId, {
-      type: draftType,
-      timestamp: next.toISOString(),
-    })
-    setEditingId(null)
+    try {
+      await updateRecord(editingId, {
+        type: draftType,
+        timestamp: next.toISOString(),
+      })
+      toast({
+        title: "Batida atualizada",
+        description: `${draftType === "in" ? "Entrada" : "Saída"} • ${formatClockTime(next)}`,
+        variant: "success",
+      })
+      setEditingId(null)
+    } catch {
+      toast({
+        title: "Nao foi possivel atualizar",
+        description: "Tente novamente.",
+        variant: "error",
+      })
+    }
   }
 
   const primaryAction =
@@ -137,7 +158,7 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
 
             <div className="mt-6">
               <Button
-                onClick={() => {
+                onClick={async () => {
                   const timestamp = isToday
                     ? now
                     : dayjs(dayDate)
@@ -146,7 +167,20 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
                       .second(0)
                       .millisecond(0)
                       .toDate()
-                  addRecord(nextType, timestamp)
+                  try {
+                    await addRecord(nextType, timestamp)
+                    toast({
+                      title: "Batida registrada",
+                      description: `${nextType === "in" ? "Entrada" : "Saída"} • ${formatClockTime(timestamp)}`,
+                      variant: "success",
+                    })
+                  } catch {
+                    toast({
+                      title: "Nao foi possivel registrar",
+                      description: "Tente novamente.",
+                      variant: "error",
+                    })
+                  }
                 }}
                 className={primaryAction.className}
               >
@@ -183,139 +217,183 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
               </div>
             ) : (
               <ul className="divide-y">
-                {todayRecords.map((record) => (
-                  <li
-                    key={record.id}
-                    className={
-                      editingId === record.id
-                        ? "flex items-start gap-4 p-5"
-                        : "flex items-center gap-4 p-5"
-                    }
-                  >
-                    <div
-                      className={
-                        record.type === "in"
-                          ? "grid size-9 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                          : "grid size-9 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                      }
-                    >
-                      {record.type === "in" ? (
-                        <LogIn className="size-4" />
-                      ) : (
-                        <LogOut className="size-4" />
-                      )}
-                    </div>
+                {todayRecords.map((record) => {
+                  const isEditing = editingId === record.id
 
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <div className="text-sm font-medium">
-                        {record.type === "in" ? "Clock in" : "Clock out"}
+                  return (
+                    <li key={record.id} className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={
+                            record.type === "in"
+                              ? "grid size-9 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "grid size-9 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                          }
+                        >
+                          {record.type === "in" ? (
+                            <LogIn className="size-4" />
+                          ) : (
+                            <LogOut className="size-4" />
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium">
+                                {record.type === "in" ? "Clock in" : "Clock out"}
+                              </div>
+
+                              {isEditing ? (
+                                <form
+                                  className="mt-3 rounded-2xl border border-border/70 bg-muted/30 p-4"
+                                  onSubmit={(event) => {
+                                    event.preventDefault()
+                                    saveEdit()
+                                  }}
+                                >
+                                  <div className="flex flex-col gap-4">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <Button
+                                        type="button"
+                                        variant={draftType === "in" ? "secondary" : "outline"}
+                                        size="sm"
+                                        className="h-9 rounded-xl px-3"
+                                        onClick={() => setDraftType("in")}
+                                      >
+                                        Clock in
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant={draftType === "out" ? "secondary" : "outline"}
+                                        size="sm"
+                                        className="h-9 rounded-xl px-3"
+                                        onClick={() => setDraftType("out")}
+                                      >
+                                        Clock out
+                                      </Button>
+                                    </div>
+
+                                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_8.5rem]">
+                                      <label className="space-y-1.5">
+                                        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                          Date
+                                        </span>
+                                        <Input
+                                          type="date"
+                                          value={getDayKey(draftDate)}
+                                          onChange={(event) => {
+                                            const next = parseDayKey(event.currentTarget.value)
+                                            if (!next) return
+                                            setDraftDate(next)
+                                          }}
+                                          onKeyDown={handleEditKeyDown}
+                                          className="h-10 rounded-xl bg-background"
+                                        />
+                                      </label>
+
+                                      <label className="space-y-1.5">
+                                        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                          Time
+                                        </span>
+                                        <TimeInput
+                                          value={draftTime}
+                                          onChange={setDraftTime}
+                                          onKeyDown={handleEditKeyDown}
+                                          placeholder="HH:MM"
+                                          className="h-10 rounded-xl bg-background"
+                                        />
+                                      </label>
+                                    </div>
+
+                                    <div className="flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                      <p className="text-xs text-muted-foreground">
+                                        Press Enter in date or time to save changes.
+                                      </p>
+
+                                      <div className="flex items-center justify-end gap-2">
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          className="h-9 rounded-xl px-3"
+                                          onClick={cancelEdit}
+                                        >
+                                          <X className="size-4" />
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          type="submit"
+                                          className="h-9 rounded-xl px-3"
+                                          disabled={!parseTimeInput(draftTime)}
+                                        >
+                                          <Check className="size-4" />
+                                          Save
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </form>
+                              ) : (
+                                <div className="text-xs text-muted-foreground">
+                                  {formatDateWithWeekday(new Date(record.timestamp))} •{" "}
+                                  {formatClockTime(new Date(record.timestamp))}
+                                </div>
+                              )}
+                            </div>
+
+                            {!isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  className="rounded-xl"
+                                  onClick={() => startEdit(record.id)}
+                                  aria-label="Edit"
+                                >
+                                  <Pencil className="size-4" />
+                                </Button>
+                                <ConfirmDialog
+                                  title="Delete record?"
+                                  description="This action cannot be undone."
+                                  confirmLabel="Delete"
+                                  onConfirm={async () => {
+                                    try {
+                                      await removeRecord(record.id)
+                                      toast({
+                                        title: "Batida excluída",
+                                        description: `${record.type === "in" ? "Entrada" : "Saída"} • ${formatClockTime(
+                                          new Date(record.timestamp)
+                                        )}`,
+                                        variant: "success",
+                                      })
+                                    } catch {
+                                      toast({
+                                        title: "Nao foi possivel excluir",
+                                        description: "Tente novamente.",
+                                        variant: "error",
+                                      })
+                                    }
+                                  }}
+                                >
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="rounded-xl text-destructive hover:text-destructive"
+                                    aria-label="Delete"
+                                  >
+                                    <Trash2 className="size-4" />
+                                  </Button>
+                                </ConfirmDialog>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
-
-                      {editingId === record.id ? (
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-                          <div className="flex shrink-0 items-center gap-2">
-                            <Button
-                              type="button"
-                              variant={draftType === "in" ? "secondary" : "outline"}
-                              size="sm"
-                              className="h-9 rounded-xl px-3"
-                              onClick={() => setDraftType("in")}
-                            >
-                              Clock in
-                            </Button>
-                            <Button
-                              type="button"
-                              variant={draftType === "out" ? "secondary" : "outline"}
-                              size="sm"
-                              className="h-9 rounded-xl px-3"
-                              onClick={() => setDraftType("out")}
-                            >
-                              Clock out
-                            </Button>
-                          </div>
-
-                          <div className="flex w-full gap-2 sm:w-auto">
-                            <DatePicker
-                              value={draftDate}
-                              onChange={(next) => {
-                                if (!next) return
-                                setDraftDate(next)
-                              }}
-                              className="h-9 rounded-xl"
-                            />
-                            <TimeInput
-                              value={draftTime}
-                              onChange={setDraftTime}
-                              placeholder="HH:MM"
-                              className="h-9 w-[5.5rem] rounded-xl"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-muted-foreground">
-                          {formatDateWithWeekday(new Date(record.timestamp))} •{" "}
-                          {formatClockTime(new Date(record.timestamp))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {editingId === record.id ? (
-                        <React.Fragment>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-xl"
-                            onClick={saveEdit}
-                            aria-label="Save"
-                          >
-                            <Check className="size-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-xl"
-                            onClick={cancelEdit}
-                            aria-label="Cancel"
-                          >
-                            <X className="size-4" />
-                          </Button>
-                        </React.Fragment>
-                      ) : (
-                        <React.Fragment>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-xl"
-                            onClick={() => startEdit(record.id)}
-                            aria-label="Edit"
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                          <ConfirmDialog
-                            title="Delete record?"
-                            description="This action cannot be undone."
-                            confirmLabel="Delete"
-                            onConfirm={() => removeRecord(record.id)}
-                          >
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              className="rounded-xl text-destructive hover:text-destructive"
-                              aria-label="Delete"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </ConfirmDialog>
-                        </React.Fragment>
-                      )}
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </CardContent>

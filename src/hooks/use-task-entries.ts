@@ -1,7 +1,13 @@
-import { useLocalStorageState } from "@/hooks/use-local-storage-state"
-import { createId, taskEntriesSchema, type TaskEntry } from "@/lib/time-tracking"
-
-const storageKey = "tiktak.task-entries.v3"
+import * as React from "react"
+import type { TaskEntry } from "@/lib/time-tracking"
+import {
+  addTaskEntry,
+  editTaskEntry,
+  getTaskEntriesSnapshot,
+  reloadTaskEntries,
+  removeTaskEntry,
+  subscribeTaskEntries,
+} from "@/stores/timeTrackingStore"
 
 type CreateTaskInput = {
   description: string
@@ -15,33 +21,20 @@ type CreateTaskInput = {
 }
 
 export function useTaskEntries() {
-  const [entries, setEntries] = useLocalStorageState<TaskEntry[]>({
-    key: storageKey,
-    defaultValue: [],
-    schema: taskEntriesSchema,
-  })
+  const snapshot = React.useSyncExternalStore(
+    subscribeTaskEntries,
+    getTaskEntriesSnapshot,
+    getTaskEntriesSnapshot
+  )
 
-  function addEntry(input: CreateTaskInput) {
-    const now = new Date()
-    const entry: TaskEntry = {
-      id: createId(),
-      createdAt: now.toISOString(),
-      ...input,
-    }
-
-    setEntries((previous) => [entry, ...previous])
-    return entry
+  return {
+    entries: snapshot.entries,
+    isLoading: snapshot.isLoading,
+    error: snapshot.error,
+    reload: reloadTaskEntries,
+    addEntry: (input: CreateTaskInput) => addTaskEntry(input),
+    updateEntry: (id: string, updates: Partial<Omit<TaskEntry, "id" | "createdAt">>) =>
+      editTaskEntry(id, updates),
+    removeEntry: (id: string) => removeTaskEntry(id),
   }
-
-  function removeEntry(id: string) {
-    setEntries((previous) => previous.filter((entry) => entry.id !== id))
-  }
-
-  function updateEntry(id: string, updates: Partial<Omit<TaskEntry, "id" | "createdAt">>) {
-    setEntries((previous) =>
-      previous.map((entry) => (entry.id === id ? { ...entry, ...updates } : entry))
-    )
-  }
-
-  return { entries, setEntries, addEntry, removeEntry, updateEntry }
 }

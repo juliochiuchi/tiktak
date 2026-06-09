@@ -21,6 +21,12 @@ export type TaskEntry = {
   createdAt: string
 }
 
+export type Project = {
+  id: string
+  name: string
+  createdAt: string
+}
+
 export const punchRecordSchema = z.object({
   id: z.string(),
   type: z.enum(["in", "out"]),
@@ -43,6 +49,14 @@ export const taskEntrySchema = z.object({
 })
 
 export const taskEntriesSchema = z.array(taskEntrySchema)
+
+export const projectSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  createdAt: z.string(),
+})
+
+export const projectsSchema = z.array(projectSchema)
 
 export function createId() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
