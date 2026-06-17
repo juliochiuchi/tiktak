@@ -38,6 +38,7 @@ export function DatePicker({
       </Popover.Trigger>
       <PopoverContent align="start" className="p-0">
         <Calendar
+          key={value ? dayjs(value).format("YYYY-MM") : "empty"}
           selected={value}
           onSelect={(next) => {
             onChange(next)

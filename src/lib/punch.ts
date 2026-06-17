@@ -2,6 +2,10 @@ import { dayjs } from "@/lib/dayjs"
 import { getDayKey } from "@/lib/time"
 import { type PunchRecord } from "@/lib/time-tracking"
 
+function toMinute(date: Date) {
+  return dayjs(date).startOf("minute")
+}
+
 export function getRecordsForDay(records: PunchRecord[], dayKey: string) {
   return records
     .filter((record) => getDayKey(new Date(record.timestamp)) === dayKey)
@@ -28,13 +32,13 @@ export function getWorkedMinutesForDay(
     }
 
     if (record.type === "out" && currentStart) {
-      totalMinutes += dayjs(at).diff(currentStart, "minute")
+      totalMinutes += toMinute(at).diff(toMinute(currentStart).toDate(), "minute")
       currentStart = null
     }
   }
 
   if (currentStart) {
-    totalMinutes += dayjs(now).diff(currentStart, "minute")
+    totalMinutes += toMinute(now).diff(toMinute(currentStart).toDate(), "minute")
   }
 
   return Math.max(0, totalMinutes)
@@ -53,7 +57,7 @@ export function getWorkedMinutesForDayClosed(records: PunchRecord[], dayKey: str
     }
 
     if (record.type === "out" && currentStart) {
-      totalMinutes += dayjs(at).diff(currentStart, "minute")
+      totalMinutes += toMinute(at).diff(toMinute(currentStart).toDate(), "minute")
       currentStart = null
     }
   }

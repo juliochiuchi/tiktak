@@ -30,7 +30,7 @@ function Workday() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="text-sm font-medium text-muted-foreground">
             Active day
           </div>
@@ -40,17 +40,17 @@ function Workday() {
               if (!next) return
               setSelectedDate(next)
             }}
-            className="h-11 w-[11.5rem] shrink-0 rounded-2xl"
+            className="h-11 w-full rounded-2xl sm:w-[11.5rem] sm:shrink-0"
           />
         </div>
       </header>
 
       <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
-        <section className="min-w-0 flex-1">
+        <section className="min-w-0 flex-1 lg:flex-[0.85]">
           <PointPage headingLevel="h2" activeDayKey={selectedDayKey} />
         </section>
 
-        <section className="min-w-0 flex-1">
+        <section className="min-w-0 flex-1 lg:flex-[1.15]">
           <TasksPage headingLevel="h2" activeDayKey={selectedDayKey} />
         </section>
       </div>

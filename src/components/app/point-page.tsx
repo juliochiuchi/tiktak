@@ -29,7 +29,7 @@ type PointPageProps = {
   activeDayKey?: string
 }
 
-export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps) {
+export function PointPage({ activeDayKey }: PointPageProps) {
   const { records, addRecord, removeRecord, updateRecord } = usePunchRecords()
   const { toast } = useToast()
   const [now, setNow] = React.useState(() => new Date())
@@ -54,8 +54,34 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
   const totalWorkedMinutes = isToday
     ? getWorkedMinutesForDay(records, dayKey, now)
     : getWorkedMinutesForDayClosed(records, dayKey)
+  const targetWorkedMinutes = 8 * 60
+  const targetBreakMinutes = 60
+  const firstEntryRecord = todayRecords.find((record) => record.type === "in")
   const lastRecord = todayRecords.at(-1)
   const nextType = lastRecord?.type === "in" ? "out" : "in"
+  const selectedWeekday = formatDateWithWeekday(dayDate).split(",")[0] ?? ""
+  const selectedDateLabel = dayjs(dayDate).format("DD/MM/YYYY")
+  const suggestedLastPunch = React.useMemo(() => {
+    if (todayRecords.length === 0) return "Inicie uma entrada"
+    if (totalWorkedMinutes >= targetWorkedMinutes) return "Meta atingida"
+    if (!firstEntryRecord) return "Inicie uma entrada"
+    if (lastRecord?.type !== "in") return "Abra uma entrada"
+
+    const suggestedTime = dayjs(new Date(firstEntryRecord.timestamp))
+      .second(0)
+      .millisecond(0)
+      .add(targetWorkedMinutes + targetBreakMinutes, "minute")
+      .toDate()
+
+    return formatClockTime(suggestedTime)
+  }, [
+    firstEntryRecord,
+    lastRecord,
+    targetBreakMinutes,
+    targetWorkedMinutes,
+    todayRecords,
+    totalWorkedMinutes,
+  ])
 
   function startEdit(id: string) {
     const record = records.find((item) => item.id === id)
@@ -110,13 +136,13 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
   const primaryAction =
     nextType === "out"
       ? {
-        label: "Clock out",
+        label: "Registrar saída",
         Icon: LogOut,
         className:
           "h-12 rounded-2xl bg-rose-500 px-6 text-base text-white shadow-sm hover:bg-rose-600",
       }
       : {
-        label: "Clock in",
+        label: "Registrar entrada",
         Icon: LogIn,
         className:
           "h-12 rounded-2xl bg-emerald-500 px-6 text-base text-white shadow-sm hover:bg-emerald-600",
@@ -124,43 +150,27 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col items-center justify-between gap-3 text-center sm:flex-row sm:text-left">
-        <div>
-          {React.createElement(
-            headingLevel,
-            { className: "text-3xl font-semibold tracking-tight" },
-            "Time Clock"
-          )}
-          <p className="mt-2 text-sm text-muted-foreground">
-            Track your clock-in and clock-out
-          </p>
-        </div>
-        <div className="text-sm font-medium text-primary">
-          {formatDurationMinutes(totalWorkedMinutes)} today
-        </div>
-      </header>
-
-      <Card className="overflow-hidden">
-        <CardContent className="p-8">
-          <div className="mx-auto flex max-w-xl flex-col items-center text-center">
-            <div className="flex items-end justify-center gap-3">
-              <span className="text-7xl font-light tracking-tight">
+      <Card className="overflow-hidden border-border/70 bg-linear-to-b from-background via-background to-muted/40 shadow-sm">
+        <CardContent className="p-5 sm:p-6 lg:p-8">
+          <div className="mx-auto flex max-w-2xl flex-col items-center px-4 py-6 text-center sm:px-6 sm:py-8">
+            <div className="flex flex-wrap items-end justify-center gap-x-3 gap-y-1">
+              <span className="text-[clamp(3.25rem,16vw,5.75rem)] leading-none font-light tracking-tight">
                 {formatClockTime(now)}
               </span>
-              <span className="pb-3 text-3xl font-light text-muted-foreground">
+              <span className="pb-2 text-[clamp(1.5rem,6vw,2.25rem)] leading-none font-light text-muted-foreground sm:pb-3">
                 {formatSeconds(now)}
               </span>
             </div>
 
-            <div className="mt-2 text-sm text-muted-foreground">
+            <div className="mt-3 max-w-md text-sm text-muted-foreground">
               {formatDateWithWeekday(dayDate)}
             </div>
 
-            <div className="mt-6">
+            <div className="mt-6 w-full max-w-md">
               <Button
                 onClick={async () => {
                   const timestamp = isToday
-                    ? now
+                    ? dayjs(now).second(0).millisecond(0).toDate()
                     : dayjs(dayDate)
                       .hour(now.getHours())
                       .minute(now.getMinutes())
@@ -182,222 +192,270 @@ export function PointPage({ headingLevel = "h1", activeDayKey }: PointPageProps)
                     })
                   }
                 }}
-                className={primaryAction.className}
+                className={`${primaryAction.className} w-full justify-center px-5 sm:w-auto sm:min-w-52`}
               >
                 <primaryAction.Icon className="size-4" />
                 {primaryAction.label}
               </Button>
-
-              <div className="mt-3 text-xs text-muted-foreground">
-                {lastRecord
-                  ? `Last record: ${lastRecord.type === "in" ? "Clock in" : "Clock out"
-                  } at ${formatClockTime(new Date(lastRecord.timestamp))}`
-                  : "No records yet"}
-              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <section className="space-y-4">
-        <div className="flex items-baseline justify-between">
+        <div className="space-y-1">
           <h2 className="text-sm font-semibold tracking-tight text-muted-foreground">
-            TODAY'S RECORDS
+            REGISTROS DO DIA
           </h2>
-          <span className="text-sm text-muted-foreground">
-            {todayRecords.length} records
-          </span>
+          <p className="text-sm text-muted-foreground">
+            Resumo das horas e histórico das batidas do dia selecionado.
+          </p>
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            {todayRecords.length === 0 ? (
-              <div className="p-6 text-sm text-muted-foreground">
-                No records for today yet.
+        <div className="grid gap-3 md:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+          <Card className="overflow-hidden border-border/70 bg-card/90">
+            <CardContent className="p-5">
+              <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Soma de horas trabalhadas
               </div>
-            ) : (
-              <ul className="divide-y">
-                {todayRecords.map((record) => {
-                  const isEditing = editingId === record.id
+              <div className="mt-3 text-4xl font-semibold tracking-tight">
+                {formatDurationMinutes(totalWorkedMinutes)}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Meta do dia: 8h trabalhadas
+              </p>
+            </CardContent>
+          </Card>
 
-                  return (
-                    <li key={record.id} className="p-5">
-                      <div className="flex items-start gap-4">
-                        <div
-                          className={
-                            record.type === "in"
-                              ? "grid size-9 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                              : "grid size-9 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
-                          }
-                        >
-                          {record.type === "in" ? (
-                            <LogIn className="size-4" />
-                          ) : (
-                            <LogOut className="size-4" />
-                          )}
-                        </div>
+          <Card className="overflow-hidden border-border/70 bg-card/90">
+            <CardContent className="p-5">
+              <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Último ponto sugerido
+              </div>
+              <div className="mt-3 text-2xl font-semibold tracking-tight">
+                {suggestedLastPunch}
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Horário para fechar 8h no total.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <div className="text-sm font-medium">
-                                {record.type === "in" ? "Clock in" : "Clock out"}
-                              </div>
+        <Card className="overflow-hidden border-border/70 bg-card/90">
+          <CardContent className="p-5">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Referente ao dia
+                </div>
+                <div className="mt-2 text-xl font-semibold tracking-tight">
+                  {selectedWeekday}
+                </div>
+              </div>
+              <div className="text-sm font-medium text-muted-foreground">
+                {selectedDateLabel}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                              {isEditing ? (
-                                <form
-                                  className="mt-3 rounded-2xl border border-border/70 bg-muted/30 p-4"
-                                  onSubmit={(event) => {
-                                    event.preventDefault()
-                                    saveEdit()
-                                  }}
-                                >
-                                  <div className="flex flex-col gap-4">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                      <Button
-                                        type="button"
-                                        variant={draftType === "in" ? "secondary" : "outline"}
-                                        size="sm"
-                                        className="h-9 rounded-xl px-3"
-                                        onClick={() => setDraftType("in")}
-                                      >
-                                        Clock in
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant={draftType === "out" ? "secondary" : "outline"}
-                                        size="sm"
-                                        className="h-9 rounded-xl px-3"
-                                        onClick={() => setDraftType("out")}
-                                      >
-                                        Clock out
-                                      </Button>
-                                    </div>
+        {todayRecords.length === 0 ? (
+          <Card className="overflow-hidden border-border/70 bg-card/90">
+            <CardContent className="p-6 text-sm text-muted-foreground">
+              Nenhuma batida registrada para este dia.
+            </CardContent>
+          </Card>
+        ) : (
+          <ul className="grid gap-3">
+            {todayRecords.map((record) => {
+              const isEditing = editingId === record.id
+              const recordDate = new Date(record.timestamp)
 
-                                    <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_8.5rem]">
-                                      <label className="space-y-1.5">
-                                        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                          Date
-                                        </span>
-                                        <Input
-                                          type="date"
-                                          value={getDayKey(draftDate)}
-                                          onChange={(event) => {
-                                            const next = parseDayKey(event.currentTarget.value)
-                                            if (!next) return
-                                            setDraftDate(next)
-                                          }}
-                                          onKeyDown={handleEditKeyDown}
-                                          className="h-10 rounded-xl bg-background"
-                                        />
-                                      </label>
-
-                                      <label className="space-y-1.5">
-                                        <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                          Time
-                                        </span>
-                                        <TimeInput
-                                          value={draftTime}
-                                          onChange={setDraftTime}
-                                          onKeyDown={handleEditKeyDown}
-                                          placeholder="HH:MM"
-                                          className="h-10 rounded-xl bg-background"
-                                        />
-                                      </label>
-                                    </div>
-
-                                    <div className="flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                                      <p className="text-xs text-muted-foreground">
-                                        Press Enter in date or time to save changes.
-                                      </p>
-
-                                      <div className="flex items-center justify-end gap-2">
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          className="h-9 rounded-xl px-3"
-                                          onClick={cancelEdit}
-                                        >
-                                          <X className="size-4" />
-                                          Cancel
-                                        </Button>
-                                        <Button
-                                          type="submit"
-                                          className="h-9 rounded-xl px-3"
-                                          disabled={!parseTimeInput(draftTime)}
-                                        >
-                                          <Check className="size-4" />
-                                          Save
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </form>
+              return (
+                <li key={record.id}>
+                  <Card className="overflow-hidden border-border/70 bg-card/90">
+                    <CardContent className="p-4 sm:p-5">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex min-w-0 items-start gap-4">
+                            <div
+                              className={
+                                record.type === "in"
+                                  ? "grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                                  : "grid size-11 shrink-0 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                              }
+                            >
+                              {record.type === "in" ? (
+                                <LogIn className="size-4" />
                               ) : (
-                                <div className="text-xs text-muted-foreground">
-                                  {formatDateWithWeekday(new Date(record.timestamp))} •{" "}
-                                  {formatClockTime(new Date(record.timestamp))}
-                                </div>
+                                <LogOut className="size-4" />
                               )}
                             </div>
 
-                            {!isEditing ? (
-                              <div className="flex items-center gap-1">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                Hora da batida
+                              </div>
+                              <div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">
+                                {formatClockTime(recordDate)}
+                              </div>
+                            </div>
+                          </div>
+
+                          {!isEditing ? (
+                            <div className="flex items-center justify-end gap-1 sm:shrink-0">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="rounded-xl"
+                                onClick={() => startEdit(record.id)}
+                                aria-label="Editar"
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                              <ConfirmDialog
+                                title="Excluir batida?"
+                                description="Essa ação não pode ser desfeita."
+                                confirmLabel="Excluir"
+                                onConfirm={async () => {
+                                  try {
+                                    await removeRecord(record.id)
+                                    toast({
+                                      title: "Batida excluída",
+                                      description: `${record.type === "in" ? "Entrada" : "Saída"} • ${formatClockTime(
+                                        new Date(record.timestamp)
+                                      )}`,
+                                      variant: "success",
+                                    })
+                                  } catch {
+                                    toast({
+                                      title: "Nao foi possivel excluir",
+                                      description: "Tente novamente.",
+                                      variant: "error",
+                                    })
+                                  }
+                                }}
+                              >
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon-sm"
-                                  className="rounded-xl"
-                                  onClick={() => startEdit(record.id)}
-                                  aria-label="Edit"
+                                  className="rounded-xl text-destructive hover:text-destructive"
+                                  aria-label="Excluir"
                                 >
-                                  <Pencil className="size-4" />
+                                  <Trash2 className="size-4" />
                                 </Button>
-                                <ConfirmDialog
-                                  title="Delete record?"
-                                  description="This action cannot be undone."
-                                  confirmLabel="Delete"
-                                  onConfirm={async () => {
-                                    try {
-                                      await removeRecord(record.id)
-                                      toast({
-                                        title: "Batida excluída",
-                                        description: `${record.type === "in" ? "Entrada" : "Saída"} • ${formatClockTime(
-                                          new Date(record.timestamp)
-                                        )}`,
-                                        variant: "success",
-                                      })
-                                    } catch {
-                                      toast({
-                                        title: "Nao foi possivel excluir",
-                                        description: "Tente novamente.",
-                                        variant: "error",
-                                      })
-                                    }
-                                  }}
+                              </ConfirmDialog>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        {isEditing ? (
+                          <form
+                            className="rounded-2xl border border-border/70 bg-muted/30 p-4"
+                            onSubmit={(event) => {
+                              event.preventDefault()
+                              saveEdit()
+                            }}
+                          >
+                            <div className="flex flex-col gap-4">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant={draftType === "in" ? "secondary" : "outline"}
+                                  size="sm"
+                                  className="h-9 rounded-xl px-3"
+                                  onClick={() => setDraftType("in")}
                                 >
+                                  Entrada
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant={draftType === "out" ? "secondary" : "outline"}
+                                  size="sm"
+                                  className="h-9 rounded-xl px-3"
+                                  onClick={() => setDraftType("out")}
+                                >
+                                  Saída
+                                </Button>
+                              </div>
+
+                              <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_8.5rem]">
+                                <label className="space-y-1.5">
+                                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                    Data
+                                  </span>
+                                  <Input
+                                    type="date"
+                                    value={getDayKey(draftDate)}
+                                    onChange={(event) => {
+                                      const next = parseDayKey(event.currentTarget.value)
+                                      if (!next) return
+                                      setDraftDate(next)
+                                    }}
+                                    onKeyDown={handleEditKeyDown}
+                                    className="h-10 rounded-xl bg-background"
+                                  />
+                                </label>
+
+                                <label className="space-y-1.5">
+                                  <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                    Hora
+                                  </span>
+                                  <TimeInput
+                                    value={draftTime}
+                                    onChange={setDraftTime}
+                                    onKeyDown={handleEditKeyDown}
+                                    placeholder="HH:MM"
+                                    className="h-10 rounded-xl bg-background"
+                                  />
+                                </label>
+                              </div>
+
+                              <div className="flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs text-muted-foreground">
+                                  Pressione Enter em data ou hora para salvar.
+                                </p>
+
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                                   <Button
                                     type="button"
                                     variant="ghost"
-                                    size="icon-sm"
-                                    className="rounded-xl text-destructive hover:text-destructive"
-                                    aria-label="Delete"
+                                    className="h-9 w-full rounded-xl px-3 sm:w-auto"
+                                    onClick={cancelEdit}
                                   >
-                                    <Trash2 className="size-4" />
+                                    <X className="size-4" />
+                                    Cancelar
                                   </Button>
-                                </ConfirmDialog>
+                                  <Button
+                                    type="submit"
+                                    className="h-9 w-full rounded-xl px-3 sm:w-auto"
+                                    disabled={!parseTimeInput(draftTime)}
+                                  >
+                                    <Check className="size-4" />
+                                    Salvar
+                                  </Button>
+                                </div>
                               </div>
-                            ) : null}
+                            </div>
+                          </form>
+                        ) : (
+                          <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+                            {record.type === "in"
+                              ? "Batida de entrada registrada"
+                              : "Batida de saída registrada"}
                           </div>
-                        </div>
+                        )}
                       </div>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                    </CardContent>
+                  </Card>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </section>
     </div>
   )

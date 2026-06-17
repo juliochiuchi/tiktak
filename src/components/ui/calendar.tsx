@@ -18,11 +18,6 @@ function Calendar({ className, selected, onSelect }: CalendarProps) {
     dayjs(selected ?? new Date()).startOf("month")
   )
 
-  React.useEffect(() => {
-    if (!selected) return
-    setMonth(dayjs(selected).startOf("month"))
-  }, [selected])
-
   const start = month.startOf("month")
   const end = month.endOf("month")
   const startWeekDay = start.day()
@@ -41,7 +36,7 @@ function Calendar({ className, selected, onSelect }: CalendarProps) {
   const todayKey = dayjs().format("YYYY-MM-DD")
 
   return (
-    <div className={cn("w-[18.5rem] p-2", className)}>
+    <div className={cn("w-full max-w-[18.5rem] p-2", className)}>
       <div className="flex items-center justify-between px-1 pb-3">
         <button
           type="button"

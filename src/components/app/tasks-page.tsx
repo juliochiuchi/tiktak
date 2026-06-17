@@ -698,7 +698,7 @@ export function TasksPage({
                           ) : null
 
                         const branchBadge = entry.branchName ? (
-                          <Badge className="max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap bg-muted font-mono text-muted-foreground">
+                          <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground sm:max-w-[16rem] sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
                             {entry.branchName}
                           </Badge>
                         ) : null

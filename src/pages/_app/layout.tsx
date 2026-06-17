@@ -14,7 +14,7 @@ function AppLayout() {
     <ToastProvider>
       <div className="min-h-dvh bg-background text-foreground">
         <TopNav />
-        <main className="mx-auto w-full max-w-6xl px-3 py-10 sm:px-4">
+        <main className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-7 sm:py-10 lg:px-6">
           <div
             key={pathname}
             className="animate-in fade-in slide-in-from-bottom-1 duration-300 ease-out"

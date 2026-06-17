@@ -91,7 +91,7 @@ function HistoryPage() {
                 value={mode}
                 onValueChange={(value) => setMode(value as FilterMode)}
               >
-                <SelectTrigger className="h-11 w-[14rem] rounded-2xl">
+                <SelectTrigger className="h-11 w-full rounded-2xl sm:w-[14rem]">
                   <SelectValue placeholder="Select filter" />
                 </SelectTrigger>
                 <SelectContent>
@@ -288,7 +288,7 @@ function HistoryPage() {
                                     className="flex flex-col gap-2 p-4 transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:flex-row sm:items-center sm:justify-between"
                                   >
                                     <div className="min-w-0 space-y-1">
-                                      <div className="truncate text-sm font-medium">
+                                      <div className="break-words text-sm font-medium sm:truncate">
                                         {task.description}
                                       </div>
                                       <div className="flex flex-wrap items-center gap-2">
@@ -315,14 +315,14 @@ function HistoryPage() {
                                             Jira {task.jiraIssueKey}
                                           </Badge>
                                           {task.branchName ? (
-                                            <Badge className="max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap bg-muted font-mono text-muted-foreground">
+                                            <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground sm:max-w-[16rem] sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
                                               {task.branchName}
                                             </Badge>
                                           ) : null}
                                         </div>
                                       ) : task.branchName ? (
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <Badge className="max-w-[16rem] overflow-hidden text-ellipsis whitespace-nowrap bg-muted font-mono text-muted-foreground">
+                                          <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground sm:max-w-[16rem] sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
                                             {task.branchName}
                                           </Badge>
                                         </div>
