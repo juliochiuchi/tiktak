@@ -54,8 +54,8 @@ export function PointPage({ activeDayKey }: PointPageProps) {
   const totalWorkedMinutes = isToday
     ? getWorkedMinutesForDay(records, dayKey, now)
     : getWorkedMinutesForDayClosed(records, dayKey)
+  const totalWorkedMinutesClosed = getWorkedMinutesForDayClosed(records, dayKey)
   const targetWorkedMinutes = 8 * 60
-  const targetBreakMinutes = 60
   const firstEntryRecord = todayRecords.find((record) => record.type === "in")
   const lastRecord = todayRecords.at(-1)
   const nextType = lastRecord?.type === "in" ? "out" : "in"
@@ -67,18 +67,22 @@ export function PointPage({ activeDayKey }: PointPageProps) {
     if (!firstEntryRecord) return "Inicie uma entrada"
     if (lastRecord?.type !== "in") return "Abra uma entrada"
 
-    const suggestedTime = dayjs(new Date(firstEntryRecord.timestamp))
+    const remainingWorkedMinutes = Math.max(
+      0,
+      targetWorkedMinutes - totalWorkedMinutesClosed
+    )
+    const suggestedTime = dayjs(new Date(lastRecord.timestamp))
       .second(0)
       .millisecond(0)
-      .add(targetWorkedMinutes + targetBreakMinutes, "minute")
+      .add(remainingWorkedMinutes, "minute")
       .toDate()
 
     return formatClockTime(suggestedTime)
   }, [
     firstEntryRecord,
     lastRecord,
-    targetBreakMinutes,
     targetWorkedMinutes,
+    totalWorkedMinutesClosed,
     todayRecords,
     totalWorkedMinutes,
   ])
