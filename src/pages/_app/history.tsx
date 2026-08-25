@@ -37,10 +37,24 @@ type FilterMode = "single" | "range"
 function HistoryPage() {
   const { records } = usePunchRecords()
   const { entries } = useTaskEntries()
-  const [mode, setMode] = React.useState<FilterMode>("single")
+  const [mode, setMode] = React.useState<FilterMode>("range")
   const [singleDate, setSingleDate] = React.useState<Date>(() => new Date())
-  const [startDate, setStartDate] = React.useState<Date>(() => new Date())
-  const [endDate, setEndDate] = React.useState<Date>(() => new Date())
+  const [startDate, setStartDate] = React.useState<Date>(() => {
+    const now = dayjs()
+    const monday =
+      now.day() === 0
+        ? now.subtract(6, "day")
+        : now.subtract(now.day() - 1, "day")
+    return monday.startOf("day").toDate()
+  })
+  const [endDate, setEndDate] = React.useState<Date>(() => {
+    const now = dayjs()
+    const monday =
+      now.day() === 0
+        ? now.subtract(6, "day")
+        : now.subtract(now.day() - 1, "day")
+    return monday.add(4, "day").startOf("day").toDate()
+  })
 
   const dayKeys = React.useMemo(() => {
     if (mode === "single") return [getDayKey(singleDate)]

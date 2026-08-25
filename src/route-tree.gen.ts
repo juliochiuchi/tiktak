@@ -13,6 +13,7 @@ import { Route as AuthLayoutRouteImport } from './pages/_auth/layout'
 import { Route as AppLayoutRouteImport } from './pages/_app/layout'
 import { Route as AppIndexRouteImport } from './pages/_app/index'
 import { Route as AuthLoginRouteImport } from './pages/_auth/login'
+import { Route as AppWorkdayV2RouteImport } from './pages/_app/workday-v2'
 import { Route as AppWorkdayRouteImport } from './pages/_app/workday'
 import { Route as AppTasksRouteImport } from './pages/_app/tasks'
 import { Route as AppPointRouteImport } from './pages/_app/point'
@@ -35,6 +36,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => AuthLayoutRoute,
+} as any)
+const AppWorkdayV2Route = AppWorkdayV2RouteImport.update({
+  id: '/workday-v2',
+  path: '/workday-v2',
+  getParentRoute: () => AppLayoutRoute,
 } as any)
 const AppWorkdayRoute = AppWorkdayRouteImport.update({
   id: '/workday',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/point': typeof AppPointRoute
   '/tasks': typeof AppTasksRoute
   '/workday': typeof AppWorkdayRoute
+  '/workday-v2': typeof AppWorkdayV2Route
   '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesByTo {
@@ -71,6 +78,7 @@ export interface FileRoutesByTo {
   '/point': typeof AppPointRoute
   '/tasks': typeof AppTasksRoute
   '/workday': typeof AppWorkdayRoute
+  '/workday-v2': typeof AppWorkdayV2Route
   '/login': typeof AuthLoginRoute
 }
 export interface FileRoutesById {
@@ -81,14 +89,29 @@ export interface FileRoutesById {
   '/_app/point': typeof AppPointRoute
   '/_app/tasks': typeof AppTasksRoute
   '/_app/workday': typeof AppWorkdayRoute
+  '/_app/workday-v2': typeof AppWorkdayV2Route
   '/_auth/login': typeof AuthLoginRoute
   '/_app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/history' | '/point' | '/tasks' | '/workday' | '/login'
+  fullPaths:
+    | '/'
+    | '/history'
+    | '/point'
+    | '/tasks'
+    | '/workday'
+    | '/workday-v2'
+    | '/login'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/history' | '/point' | '/tasks' | '/workday' | '/login'
+  to:
+    | '/'
+    | '/history'
+    | '/point'
+    | '/tasks'
+    | '/workday'
+    | '/workday-v2'
+    | '/login'
   id:
     | '__root__'
     | '/_app'
@@ -97,6 +120,7 @@ export interface FileRouteTypes {
     | '/_app/point'
     | '/_app/tasks'
     | '/_app/workday'
+    | '/_app/workday-v2'
     | '/_auth/login'
     | '/_app/'
   fileRoutesById: FileRoutesById
@@ -136,6 +160,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthLayoutRoute
     }
+    '/_app/workday-v2': {
+      id: '/_app/workday-v2'
+      path: '/workday-v2'
+      fullPath: '/workday-v2'
+      preLoaderRoute: typeof AppWorkdayV2RouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app/workday': {
       id: '/_app/workday'
       path: '/workday'
@@ -172,6 +203,7 @@ interface AppLayoutRouteChildren {
   AppPointRoute: typeof AppPointRoute
   AppTasksRoute: typeof AppTasksRoute
   AppWorkdayRoute: typeof AppWorkdayRoute
+  AppWorkdayV2Route: typeof AppWorkdayV2Route
   AppIndexRoute: typeof AppIndexRoute
 }
 
@@ -180,6 +212,7 @@ const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppPointRoute: AppPointRoute,
   AppTasksRoute: AppTasksRoute,
   AppWorkdayRoute: AppWorkdayRoute,
+  AppWorkdayV2Route: AppWorkdayV2Route,
   AppIndexRoute: AppIndexRoute,
 }
 

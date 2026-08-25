@@ -6,8 +6,8 @@ import {
   ClipboardList,
   Clock,
   Home,
-  LayoutDashboard,
   Menu,
+  PanelLeft,
 } from "lucide-react"
 
 import { ThemeToggle } from "@/components/app/theme-toggle"
@@ -23,7 +23,7 @@ type NavItem = {
 
 const items: NavItem[] = [
   { to: "/", label: "Home", Icon: Home },
-  { to: "/workday", label: "Workday", Icon: LayoutDashboard },
+  { to: "/workday-v2", label: "Workday", Icon: PanelLeft },
   { to: "/point", label: "Punch", Icon: Clock },
   { to: "/tasks", label: "Tasks", Icon: ClipboardList },
   { to: "/history", label: "History", Icon: CalendarDays },
