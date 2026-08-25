@@ -2,10 +2,8 @@ import * as React from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 import {
-  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
   Clock,
   ListTodo,
   LogIn,
@@ -165,10 +163,8 @@ function WorkdayV2() {
   const [punchDrawerOpen, setPunchDrawerOpen] = React.useState(false)
   const [tasksDrawerOpen, setTasksDrawerOpen] = React.useState(false)
 
-  const { records, addRecord, removeRecord, updateRecord } = usePunchRecords()
-  const { entries, addEntry, removeEntry, updateEntry } = useTaskEntries()
-  const { projects, addProject } = useProjects()
-  const { toast } = useToast()
+  const { records } = usePunchRecords()
+  const { entries } = useTaskEntries()
 
   const selectedDayKey = getDayKey(selectedDate)
 
@@ -216,7 +212,6 @@ function WorkdayV2() {
   const targetWorkedMinutes = 8 * 60
   const firstEntryRecord = todayRecords.find((r) => r.type === "in")
   const lastRecord = todayRecords.at(-1)
-  const nextType = lastRecord?.type === "in" ? "out" : "in"
   const selectedWeekday =
     formatDateWithWeekday(selectedDate).split(",")[0] ?? ""
   const selectedDateLabel = dayjs(selectedDate).format("DD/MM/YYYY")
