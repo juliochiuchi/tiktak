@@ -116,6 +116,7 @@ function getGroupedDescriptions(
   return entries
     .map((entry) => getTaskDescriptionText(entry.description))
     .filter(Boolean)
+    .map((text) => `* ${text}`)
     .join("\n")
 }
 
@@ -1349,9 +1350,6 @@ function TasksDrawer({
                                       try {
                                         await updateEntry(entry.id, {
                                           logged: checked,
-                                          jiraIssueKey: checked
-                                            ? entry.jiraIssueKey
-                                            : "",
                                         })
                                       } catch {
                                         toast({
@@ -1476,9 +1474,7 @@ function TasksDrawer({
                     date: getDayKey(occurredAt),
                     durationMinutes,
                     logged: Boolean(values.logged),
-                    jiraIssueKey: values.logged
-                      ? (values.jiraIssueKey ?? "").trim()
-                      : "",
+                    jiraIssueKey: (values.jiraIssueKey ?? "").trim(),
                     branchName: (values.branchName ?? "").trim(),
                   }
 
@@ -1663,11 +1659,6 @@ function TasksDrawer({
                           checked={field.value ?? false}
                           onCheckedChange={(checked) => {
                             field.onChange(checked)
-                            if (!checked) {
-                              form.setValue("jiraIssueKey", "", {
-                                shouldValidate: true,
-                              })
-                            }
                           }}
                         />
                       </FormControl>
