@@ -18,7 +18,7 @@ import {
   ListChecks,
 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm, useController } from "react-hook-form"
+import { useForm } from "react-hook-form"
 
 import { DatePicker } from "@/components/app/date-picker"
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
@@ -1040,12 +1040,6 @@ function TasksDrawer({
       branchName: "",
     },
   })
-
-  const { field: loggedField } = useController({
-    control: form.control,
-    name: "logged",
-  })
-  const logged = loggedField.value ?? false
 
   React.useEffect(() => {
     if (form.getValues("project")) return
