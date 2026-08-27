@@ -18,7 +18,7 @@ import {
   ListChecks,
 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
+import { useForm, useController } from "react-hook-form"
 
 import { DatePicker } from "@/components/app/date-picker"
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
@@ -173,9 +173,13 @@ function WorkdayV2() {
     return () => window.clearInterval(interval)
   }, [])
 
-  const weekStart = dayjs(selectedDate).startOf("week").toDate()
-  const weekEnd = dayjs(selectedDate).endOf("week").toDate()
-  const weekDayKeys = getDayKeysInRange(weekStart, weekEnd)
+  const { weekStart, weekEnd, weekDayKeys } = React.useMemo(() => {
+    const weekStart = dayjs(selectedDate).startOf("week").toDate()
+    const weekEnd = dayjs(selectedDate).endOf("week").toDate()
+    const weekDayKeys = getDayKeysInRange(weekStart, weekEnd)
+    return { weekStart, weekEnd, weekDayKeys }
+  }, [selectedDate])
+
   const todayKey = getDayKey(now)
 
   const weekDays: WeekDay[] = React.useMemo(() => {
@@ -294,7 +298,7 @@ function WorkdayV2() {
               if (!next) return
               setSelectedDate(next)
             }}
-            className="h-11 w-full rounded-2xl sm:w-[11.5rem] sm:shrink-0"
+            className="h-11 w-full rounded-2xl sm:w-46 sm:shrink-0"
           />
         </div>
       </header>
@@ -306,7 +310,7 @@ function WorkdayV2() {
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="rounded-xl"
+              className="rounded-xl cursor-pointer"
               onClick={() => navigateWeek(-1)}
               aria-label="Semana anterior"
             >
@@ -325,7 +329,7 @@ function WorkdayV2() {
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="rounded-xl"
+              className="rounded-xl cursor-pointer"
               onClick={() => navigateWeek(1)}
               aria-label="Proxima semana"
             >
@@ -340,7 +344,7 @@ function WorkdayV2() {
                 type="button"
                 onClick={() => handleSelectWeekDay(day.dayKey)}
                 className={cn(
-                  "group relative flex flex-col items-center gap-1 rounded-2xl border p-2 sm:p-3 transition-all",
+                  "group relative flex flex-col items-center gap-1 rounded-2xl border p-2 sm:p-3 transition-all cursor-pointer",
                   day.isSelected
                     ? "border-primary bg-primary/5 ring-2 ring-primary/30"
                     : "border-border/60 hover:border-border hover:bg-muted/40"
@@ -352,8 +356,8 @@ function WorkdayV2() {
                     day.isToday
                       ? "text-primary"
                       : day.isSelected
-                      ? "text-foreground"
-                      : "text-muted-foreground"
+                        ? "text-foreground"
+                        : "text-muted-foreground"
                   )}
                 >
                   {day.dayName}
@@ -362,10 +366,10 @@ function WorkdayV2() {
                   className={cn(
                     "grid size-7 place-items-center rounded-xl text-sm font-semibold sm:size-8 sm:text-base",
                     day.isToday &&
-                      !day.isSelected &&
-                      "bg-primary text-primary-foreground",
+                    !day.isSelected &&
+                    "bg-primary text-primary-foreground",
                     day.isSelected &&
-                      "bg-primary text-primary-foreground"
+                    "bg-primary text-primary-foreground"
                   )}
                 >
                   {day.dayNumber}
@@ -660,17 +664,17 @@ function PunchDrawer({
   const primaryAction =
     nextType === "out"
       ? {
-          label: "Registrar saida",
-          Icon: LogOut,
-          className:
-            "h-12 rounded-2xl bg-rose-500 px-6 text-base text-white shadow-sm hover:bg-rose-600",
-        }
+        label: "Registrar saida",
+        Icon: LogOut,
+        className:
+          "h-12 rounded-2xl bg-rose-500 px-6 text-base text-white shadow-sm hover:bg-rose-600",
+      }
       : {
-          label: "Registrar entrada",
-          Icon: LogIn,
-          className:
-            "h-12 rounded-2xl bg-emerald-500 px-6 text-base text-white shadow-sm hover:bg-emerald-600",
-        }
+        label: "Registrar entrada",
+        Icon: LogIn,
+        className:
+          "h-12 rounded-2xl bg-emerald-500 px-6 text-base text-white shadow-sm hover:bg-emerald-600",
+      }
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
@@ -719,11 +723,11 @@ function PunchDrawer({
                   const timestamp = isToday
                     ? dayjs(now).second(0).millisecond(0).toDate()
                     : dayjs(dayDate)
-                        .hour(now.getHours())
-                        .minute(now.getMinutes())
-                        .second(0)
-                        .millisecond(0)
-                        .toDate()
+                      .hour(now.getHours())
+                      .minute(now.getMinutes())
+                      .second(0)
+                      .millisecond(0)
+                      .toDate()
                   try {
                     await addRecord(nextType, timestamp)
                     toast({
@@ -1037,7 +1041,11 @@ function TasksDrawer({
     },
   })
 
-  const logged = form.watch("logged") ?? false
+  const { field: loggedField } = useController({
+    control: form.control,
+    name: "logged",
+  })
+  const logged = loggedField.value ?? false
 
   React.useEffect(() => {
     if (form.getValues("project")) return
@@ -1309,7 +1317,7 @@ function TasksDrawer({
                           >
                             <CardContent className="space-y-4 p-5">
                               <div className="min-w-0 space-y-2">
-                                <div className="break-words text-sm font-semibold">
+                                <div className="wrap-break-word text-sm font-semibold">
                                   {entry.description}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -1683,7 +1691,6 @@ function TasksDrawer({
                         <Input
                           placeholder="Ex.: ABC-123"
                           className="h-11 rounded-2xl"
-                          disabled={!logged}
                           {...field}
                           value={field.value ?? ""}
                         />
