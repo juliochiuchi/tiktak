@@ -3,7 +3,6 @@ import type { ComponentType } from "react"
 import { Link } from "@tanstack/react-router"
 import {
   CalendarDays,
-  ClipboardList,
   Clock,
   Home,
   Menu,
@@ -24,8 +23,6 @@ type NavItem = {
 const items: NavItem[] = [
   { to: "/", label: "Início", Icon: Home },
   { to: "/workday-v2", label: "Jornada", Icon: PanelLeft },
-  { to: "/point", label: "Batidas", Icon: Clock },
-  { to: "/tasks", label: "Tarefas", Icon: ClipboardList },
   { to: "/history", label: "Histórico", Icon: CalendarDays },
 ]
 

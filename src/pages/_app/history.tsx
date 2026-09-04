@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { Clock, ListTodo } from "lucide-react"
+import { ArrowRight, Clock, ClipboardList, ListTodo, PanelLeft } from "lucide-react"
 
 import { DatePicker } from "@/components/app/date-picker"
 import { Badge } from "@/components/ui/badge"
@@ -87,11 +87,43 @@ function HistoryPage() {
 
   return (
     <div className="space-y-8">
-      <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Histórico</h1>
-        <p className="text-sm text-muted-foreground">
-          Revise batidas e tarefas por dia ou em um intervalo de datas.
-        </p>
+      <header className="space-y-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold tracking-tight">Histórico</h1>
+            <p className="text-sm text-muted-foreground">
+              Revise batidas e tarefas por dia ou em um intervalo de datas.
+            </p>
+          </div>
+          <Button
+            asChild
+            className="h-11 justify-between gap-2 rounded-2xl px-5 shadow-sm"
+          >
+            <Link to="/workday-v2" search={{ date: getDayKey(new Date()) }}>
+              <div className="flex items-center gap-2">
+                <PanelLeft className="size-4 shrink-0" />
+                <span className="text-sm font-semibold leading-none">
+                  Iniciar workday
+                </span>
+              </div>
+              <ArrowRight className="size-4 shrink-0 text-primary-foreground/80" />
+            </Link>
+          </Button>
+        </div>
+        <div className="flex">
+          <Button
+            asChild
+            variant="outline"
+            className="h-10 justify-center gap-2 rounded-2xl px-5"
+          >
+            <Link to="/tasks">
+              <ClipboardList className="size-4 shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium leading-none text-foreground">
+                Visualizar apenas as tarefas lançadas
+              </span>
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <Card>
@@ -105,7 +137,7 @@ function HistoryPage() {
                 value={mode}
                 onValueChange={(value) => setMode(value as FilterMode)}
               >
-                <SelectTrigger className="h-11 w-full rounded-2xl sm:w-[14rem]">
+                <SelectTrigger className="h-11 w-full rounded-2xl sm:w-56">
                   <SelectValue placeholder="Selecione o filtro" />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,7 +282,7 @@ function HistoryPage() {
                               {day.punches.map((record) => (
                                 <li key={record.id}>
                                   <Link
-                                    to="/workday"
+                                    to="/workday-v2"
                                     search={{ date: day.dayKey }}
                                     className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                   >
@@ -297,12 +329,12 @@ function HistoryPage() {
                               {day.tasks.map((task) => (
                                 <li key={task.id}>
                                   <Link
-                                    to="/workday"
+                                    to="/workday-v2"
                                     search={{ date: day.dayKey }}
                                     className="flex flex-col gap-2 p-4 transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:flex-row sm:items-center sm:justify-between"
                                   >
                                     <div className="min-w-0 space-y-1">
-                                      <div className="break-words text-sm font-medium sm:truncate">
+                                      <div className="wrap-break-word text-sm font-medium sm:truncate">
                                         {task.description}
                                       </div>
                                       <div className="flex flex-wrap items-center gap-2">

@@ -31,7 +31,7 @@ export function LoadingOverlay(props: { label?: string; delayMs?: number }) {
       aria-busy={isLoading}
       aria-live="polite"
       className={cn(
-        "fixed inset-0 z-[60] flex items-center justify-center bg-background/60 backdrop-blur-sm transition-opacity duration-200",
+        "fixed inset-0 z-60 flex items-center justify-center bg-background/60 backdrop-blur-sm transition-opacity duration-200",
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       )}
     >

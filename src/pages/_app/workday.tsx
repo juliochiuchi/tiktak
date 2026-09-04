@@ -53,7 +53,7 @@ function Workday() {
                 if (!next) return
                 setSelectedDate(next)
               }}
-              className="h-11 w-full rounded-2xl sm:w-[11.5rem] sm:shrink-0"
+              className="h-11 w-full rounded-2xl sm:w-46 sm:shrink-0"
             />
           </div>
         </div>

@@ -165,8 +165,9 @@ function WorkdayV2() {
   const [punchDrawerOpen, setPunchDrawerOpen] = React.useState(false)
   const [tasksDrawerOpen, setTasksDrawerOpen] = React.useState(false)
 
-  const { records } = usePunchRecords()
-  const { entries } = useTaskEntries()
+  const { records, reload: reloadPunchRecords } = usePunchRecords()
+  const { entries, reload: reloadTaskEntries } = useTaskEntries()
+  const { reload: reloadProjects } = useProjects()
 
   const selectedDayKey = getDayKey(selectedDate)
 
@@ -174,6 +175,12 @@ function WorkdayV2() {
     const interval = window.setInterval(() => setNow(new Date()), 1000)
     return () => window.clearInterval(interval)
   }, [])
+
+  React.useEffect(() => {
+    void reloadPunchRecords()
+    void reloadTaskEntries()
+    void reloadProjects()
+  }, [reloadPunchRecords, reloadTaskEntries, reloadProjects])
 
   const { weekStart, weekEnd, weekDayKeys } = React.useMemo(() => {
     const weekStart = dayjs(selectedDate).startOf("week").toDate()
