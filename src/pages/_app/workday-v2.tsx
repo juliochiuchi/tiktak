@@ -485,55 +485,62 @@ function WorkdayV2() {
               </div>
             </div>
 
-            <div className="mt-8 grid w-full max-w-md gap-3 sm:grid-cols-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-14 w-full justify-center gap-2 rounded-2xl border-border/80 px-5 text-base"
-                onClick={() => setPunchDrawerOpen(true)}
-              >
-                <Clock className="size-5" />
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-semibold leading-none">
-                    Bater ponto
-                  </span>
-                  <span className="mt-1 text-[0.7rem] font-normal text-muted-foreground">
-                    {todayRecords.length} registros
-                  </span>
-                </div>
-              </Button>
+            <div className="mt-8 flex w-full flex-col items-center gap-5">
+              <div className="grid w-full max-w-md gap-3 sm:grid-cols-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-14 w-full justify-center gap-2 rounded-2xl border-border/80 px-5 text-base"
+                  onClick={() => setPunchDrawerOpen(true)}
+                >
+                  <Clock className="size-5 shrink-0" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-semibold leading-none">
+                      Bater ponto
+                    </span>
+                    <span className="mt-1 text-[0.7rem] font-normal text-muted-foreground">
+                      {todayRecords.length} registros
+                    </span>
+                  </div>
+                </Button>
 
-              <Button
-                type="button"
-                className="h-14 w-full justify-center gap-2 rounded-2xl px-5 text-base"
-                onClick={() => setTasksDrawerOpen(true)}
-              >
-                <ListChecks className="size-5" />
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-semibold leading-none">
-                    Tarefas
-                  </span>
-                  <span className="mt-1 text-[0.7rem] font-normal text-primary-foreground/80">
-                    {activeEntries.length} tarefas
-                  </span>
-                </div>
-              </Button>
+                <Button
+                  type="button"
+                  className="h-14 w-full justify-center gap-2 rounded-2xl px-5 text-base"
+                  onClick={() => setTasksDrawerOpen(true)}
+                >
+                  <ListChecks className="size-5 shrink-0" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-semibold leading-none">
+                      Tarefas
+                    </span>
+                    <span className="mt-1 text-[0.7rem] font-normal text-primary-foreground/80">
+                      {activeEntries.length} tarefas
+                    </span>
+                  </div>
+                </Button>
+              </div>
+
+              <Separator className="w-full max-w-md" />
 
               <Button
                 asChild
                 variant="secondary"
-                className="h-14 w-full justify-center gap-2 rounded-2xl px-5 text-base"
+                className="h-14 w-full max-w-md justify-between rounded-2xl px-5 text-base shadow-sm"
               >
                 <Link to="/history">
-                  <CalendarDays className="size-5" />
-                  <div className="flex flex-col items-start">
-                    <span className="text-sm font-semibold leading-none">
-                      Encerrar workday
-                    </span>
-                    <span className="mt-1 text-[0.7rem] font-normal text-muted-foreground">
-                      Ver histórico
-                    </span>
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="size-5 shrink-0 text-muted-foreground" />
+                    <div className="flex flex-col items-start">
+                      <span className="text-sm font-semibold leading-none">
+                        Encerrar workday
+                      </span>
+                      <span className="mt-1 text-[0.7rem] font-normal text-muted-foreground">
+                        Finalizar e ver resumo do dia
+                      </span>
+                    </div>
                   </div>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
                 </Link>
               </Button>
             </div>
