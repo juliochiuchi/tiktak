@@ -1,7 +1,8 @@
 import * as React from "react"
-import { createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 import {
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -484,7 +485,7 @@ function WorkdayV2() {
               </div>
             </div>
 
-            <div className="mt-8 grid w-full max-w-md gap-3 sm:grid-cols-2">
+            <div className="mt-8 grid w-full max-w-md gap-3 sm:grid-cols-3">
               <Button
                 type="button"
                 variant="outline"
@@ -516,6 +517,24 @@ function WorkdayV2() {
                     {activeEntries.length} tarefas
                   </span>
                 </div>
+              </Button>
+
+              <Button
+                asChild
+                variant="secondary"
+                className="h-14 w-full justify-center gap-2 rounded-2xl px-5 text-base"
+              >
+                <Link to="/history">
+                  <CalendarDays className="size-5" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-semibold leading-none">
+                      Encerrar workday
+                    </span>
+                    <span className="mt-1 text-[0.7rem] font-normal text-muted-foreground">
+                      Ver histórico
+                    </span>
+                  </div>
+                </Link>
               </Button>
             </div>
           </div>

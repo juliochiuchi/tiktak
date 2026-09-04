@@ -1,8 +1,10 @@
 import * as React from "react"
-import { createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
+import { CalendarDays } from "lucide-react"
 
 import { DatePicker } from "@/components/app/date-picker"
+import { Button } from "@/components/ui/button"
 import { PointPage } from "@/components/app/point-page"
 import { TasksPage } from "@/components/app/tasks-page"
 import { parseDayKey, getDayKey } from "@/lib/time"
@@ -31,17 +33,29 @@ function Workday() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <div className="text-sm font-medium text-muted-foreground">
-            Dia ativo
+          <Button
+            asChild
+            variant="secondary"
+            className="h-11 justify-center gap-2 rounded-2xl px-5"
+          >
+            <Link to="/history">
+              <CalendarDays className="size-4" />
+              Encerrar workday
+            </Link>
+          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div className="text-sm font-medium text-muted-foreground">
+              Dia ativo
+            </div>
+            <DatePicker
+              value={selectedDate}
+              onChange={(next) => {
+                if (!next) return
+                setSelectedDate(next)
+              }}
+              className="h-11 w-full rounded-2xl sm:w-[11.5rem] sm:shrink-0"
+            />
           </div>
-          <DatePicker
-            value={selectedDate}
-            onChange={(next) => {
-              if (!next) return
-              setSelectedDate(next)
-            }}
-            className="h-11 w-full rounded-2xl sm:w-[11.5rem] sm:shrink-0"
-          />
         </div>
       </header>
 
