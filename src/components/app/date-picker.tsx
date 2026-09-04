@@ -33,7 +33,7 @@ export function DatePicker({
           )}
         >
           <CalendarIcon className="size-4 opacity-70" />
-          {value ? dayjs(value).format("DD/MM/YYYY") : "Select a date"}
+          {value ? dayjs(value).format("DD/MM/YYYY") : "Selecione uma data"}
         </Button>
       </Popover.Trigger>
       <PopoverContent align="start" className="p-0">

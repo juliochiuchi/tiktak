@@ -24,15 +24,15 @@ function Workday() {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight">Workday</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Jornada de trabalho</h1>
           <p className="text-sm text-muted-foreground">
-            Clock in/out and log tasks for a specific day.
+            Registre entrada/saída e tarefas para um dia específico.
           </p>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <div className="text-sm font-medium text-muted-foreground">
-            Active day
+            Dia ativo
           </div>
           <DatePicker
             value={selectedDate}

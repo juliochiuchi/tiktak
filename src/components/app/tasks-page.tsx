@@ -50,8 +50,8 @@ import { dayjs } from "@/lib/dayjs"
 import { parseTimeInput } from "@/lib/time-input"
 
 const createTaskSchema = z.object({
-  description: z.string().min(1, "Enter a description"),
-  project: z.string().min(1, "Select a project"),
+  description: z.string().min(1, "Informe uma descrição"),
+  project: z.string().min(1, "Selecione um projeto"),
   date: z.date(),
   duration: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
   logged: z.boolean().default(false),
@@ -235,13 +235,13 @@ export function TasksPage({
       setNewProjectName("")
       setIsCreatingProject(false)
       toast({
-        title: "Projeto criado",
-        description: saved.name,
+        title: "Sucesso!",
+        description: `Projeto "${saved.name}" foi criado.`,
         variant: "success",
       })
     } catch {
       toast({
-        title: "Nao foi possivel criar o projeto",
+        title: "Não foi possível criar o projeto",
         description: "Tente novamente.",
         variant: "error",
       })
@@ -274,13 +274,13 @@ export function TasksPage({
       try {
         await copyToClipboard(text)
         toast({
-          title: "Descricao copiada",
-          description: text,
+          title: "Sucesso!",
+          description: "Descrição copiada para a área de transferência.",
           variant: "success",
         })
       } catch {
         toast({
-          title: "Nao foi possivel copiar",
+          title: "Não foi possível copiar",
           description: "Tente novamente.",
           variant: "error",
         })
@@ -301,13 +301,13 @@ export function TasksPage({
       try {
         await copyToClipboard(text)
         toast({
-          title: "Descricoes copiadas",
-          description: `${groupEntries.length} task(s) copiadas.`,
+          title: "Sucesso!",
+          description: `${groupEntries.length} descrição(ões) copiada(s).`,
           variant: "success",
         })
       } catch {
         toast({
-          title: "Nao foi possivel copiar",
+          title: "Não foi possível copiar",
           description: "Tente novamente.",
           variant: "error",
         })
@@ -323,10 +323,10 @@ export function TasksPage({
           {React.createElement(
             headingLevel,
             { className: "text-3xl font-semibold tracking-tight" },
-            "Tasks"
+            "Tarefas"
           )}
           <p className="mt-2 text-sm text-muted-foreground">
-            Log your work and time spent
+            Registre seu trabalho e o tempo gasto
           </p>
         </div>
 
@@ -338,14 +338,14 @@ export function TasksPage({
               onClick={openCreate}
             >
               <Plus className="size-4" />
-              New task
+              Nova tarefa
             </Button>
           </Dialog.Trigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingId ? "Edit task" : "New task"}</DialogTitle>
+              <DialogTitle>{editingId ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
               <DialogDescription>
-                Choose project, date & time, and duration.
+                Escolha o projeto, data, hora e duração.
               </DialogDescription>
             </DialogHeader>
 
@@ -357,7 +357,7 @@ export function TasksPage({
                   if (durationMinutes <= 0) {
                     form.setError("duration", {
                       type: "validate",
-                      message: "Duration must be > 00:00",
+                      message: "Duração deve ser > 00:00",
                     })
                     return
                   }
@@ -384,9 +384,7 @@ export function TasksPage({
                     date: getDayKey(occurredAt),
                     durationMinutes,
                     logged: Boolean(values.logged),
-                    jiraIssueKey: values.logged
-                      ? (values.jiraIssueKey ?? "").trim()
-                      : "",
+                    jiraIssueKey: (values.jiraIssueKey ?? "").trim(),
                     branchName: (values.branchName ?? "").trim(),
                   }
 
@@ -394,13 +392,13 @@ export function TasksPage({
                     try {
                       await updateEntry(editingId, payload)
                       toast({
-                        title: "Task atualizada",
-                        description: payload.description,
+                        title: "Sucesso!",
+                        description: "A tarefa foi atualizada.",
                         variant: "success",
                       })
                     } catch {
                       toast({
-                        title: "Nao foi possivel atualizar",
+                        title: "Não foi possível atualizar",
                         description: "Tente novamente.",
                         variant: "error",
                       })
@@ -410,13 +408,13 @@ export function TasksPage({
                     try {
                       await addEntry(payload)
                       toast({
-                        title: "Task criada",
-                        description: payload.description,
+                        title: "Sucesso!",
+                        description: "A tarefa foi cadastrada.",
                         variant: "success",
                       })
                     } catch {
                       toast({
-                        title: "Nao foi possivel criar",
+                        title: "Não foi possível criar",
                         description: "Tente novamente.",
                         variant: "error",
                       })
@@ -432,9 +430,9 @@ export function TasksPage({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Descrição</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="E.g. Update dashboard layout" {...field} />
+                        <Textarea placeholder="Ex.: Atualizar layout do painel" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -446,11 +444,11 @@ export function TasksPage({
                   name="project"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Project</FormLabel>
+                      <FormLabel>Projeto</FormLabel>
                       <FormControl>
                         <Select.Root value={field.value} onValueChange={field.onChange}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select a project" />
+                            <SelectValue placeholder="Selecione um projeto" />
                           </SelectTrigger>
                           <SelectContent>
                             {projectOptions.map((project) => (
@@ -464,7 +462,7 @@ export function TasksPage({
                       <div className="mt-3 space-y-3 rounded-2xl border border-dashed border-border p-3">
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-sm text-muted-foreground">
-                            Nao encontrou o projeto na lista?
+                            Não encontrou o projeto na lista?
                           </div>
                           <Button
                             type="button"
@@ -512,7 +510,7 @@ export function TasksPage({
                     name="date"
                     render={({ field }) => (
                       <FormItem className="flex-1">
-                        <FormLabel>Date</FormLabel>
+                        <FormLabel>Data</FormLabel>
                         <FormControl>
                           <DatePicker
                             value={field.value}
@@ -530,7 +528,7 @@ export function TasksPage({
                     name="duration"
                     render={({ field }) => (
                       <FormItem className="flex-1">
-                        <FormLabel>Time spent</FormLabel>
+                        <FormLabel>Tempo gasto</FormLabel>
                         <FormControl>
                           <TimeInput
                             value={field.value}
@@ -551,9 +549,9 @@ export function TasksPage({
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between gap-4 rounded-2xl border border-input p-4">
                       <div className="space-y-0.5">
-                        <FormLabel>Logged</FormLabel>
+                        <FormLabel>Registrado</FormLabel>
                         <div className="text-sm text-muted-foreground">
-                          Already logged in Jira
+                          Já registrado no Jira
                         </div>
                       </div>
                       <FormControl>
@@ -576,10 +574,10 @@ export function TasksPage({
                   name="jiraIssueKey"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Jira issue</FormLabel>
+                      <FormLabel>Tarefa Jira</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="E.g. ABC-123"
+                          placeholder="Ex.: ABC-123"
                           className="h-11 rounded-2xl"
                           disabled={!logged}
                           {...field}
@@ -599,7 +597,7 @@ export function TasksPage({
                       <FormLabel>Branch</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="E.g. feature/ABC-123-task-logging"
+                          placeholder="Ex.: feature/ABC-123-registro-tarefa"
                           className="h-11 rounded-2xl"
                           {...field}
                           value={field.value ?? ""}
@@ -617,10 +615,10 @@ export function TasksPage({
                     className="h-10 rounded-2xl px-4"
                     onClick={() => setOpen(false)}
                   >
-                    Cancel
+                    Cancelar
                   </Button>
                   <Button type="submit" className="h-10 rounded-2xl px-5">
-                    Save
+                    Salvar
                   </Button>
                 </DialogFooter>
               </form>
@@ -635,7 +633,7 @@ export function TasksPage({
           <Input
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search by description or project"
+            placeholder="Buscar por descrição ou projeto"
             className="h-11 rounded-2xl pl-10"
           />
         </div>
@@ -646,7 +644,7 @@ export function TasksPage({
             className="h-11 rounded-2xl px-4"
             onClick={() => setQuery("")}
           >
-            Clear
+            Limpar
           </Button>
         ) : null}
       </div>
@@ -654,7 +652,7 @@ export function TasksPage({
       {groups.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
-            No tasks found.
+            Nenhuma tarefa encontrada.
           </CardContent>
         </Card>
       ) : (
@@ -678,7 +676,7 @@ export function TasksPage({
                       onClick={() => handleCopyGroupDescriptions(group.entries)}
                     >
                       <Copy className="size-3.5" />
-                      Copy all
+                      Copiar todas
                     </Button>
                     <div className="text-sm font-medium text-primary">
                       {formatDurationMinutes(groupMinutes)} total
@@ -690,12 +688,11 @@ export function TasksPage({
                   {group.entries.map((entry) => (
                     <Card key={entry.id} className="overflow-hidden">
                       {(() => {
-                        const jiraBadge =
-                          entry.logged && entry.jiraIssueKey ? (
-                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
-                              {entry.jiraIssueKey}
-                            </Badge>
-                          ) : null
+                        const jiraBadge = entry.jiraIssueKey ? (
+                          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                            {entry.jiraIssueKey}
+                          </Badge>
+                        ) : null
 
                         const branchBadge = entry.branchName ? (
                           <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground sm:max-w-[16rem] sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
@@ -745,14 +742,14 @@ export function TasksPage({
 
                         const actionItems = (
                           <>
-                            <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                            <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
                               <Clock className="size-4 text-muted-foreground" />
                               {formatDurationMinutes(entry.durationMinutes)}
                             </div>
 
-                            <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                            <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
                               <span className="text-xs text-muted-foreground">
-                                Logged
+                                Logado
                               </span>
                               <Switch
                                 checked={entry.logged}
@@ -764,7 +761,7 @@ export function TasksPage({
                                     })
                                   } catch {
                                     toast({
-                                      title: "Nao foi possivel atualizar",
+                                      title: "Não foi possível atualizar",
                                       description: "Tente novamente.",
                                       variant: "error",
                                     })
@@ -777,9 +774,9 @@ export function TasksPage({
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              className="rounded-xl"
+                              className="shrink-0 rounded-xl"
                               onClick={() => handleCopyDescription(entry.description)}
-                              aria-label="Copy description"
+                              aria-label="Copiar descrição"
                             >
                               <Copy className="size-4" />
                             </Button>
@@ -788,28 +785,28 @@ export function TasksPage({
                               type="button"
                               variant="ghost"
                               size="icon-sm"
-                              className="rounded-xl"
+                              className="shrink-0 rounded-xl"
                               onClick={() => openEdit(entry.id)}
-                              aria-label="Edit"
+                              aria-label="Editar"
                             >
                               <Pencil className="size-4" />
                             </Button>
 
                             <ConfirmDialog
-                              title="Delete task?"
-                              description="This action cannot be undone."
-                              confirmLabel="Delete"
+                              title="Excluir tarefa?"
+                              description="Esta ação não pode ser desfeita."
+                              confirmLabel="Excluir"
                               onConfirm={async () => {
                                 try {
                                   await removeEntry(entry.id)
                                   toast({
-                                    title: "Task excluída",
-                                    description: entry.description,
+                                    title: "Sucesso!",
+                                    description: "A tarefa foi excluída.",
                                     variant: "success",
                                   })
                                 } catch {
                                   toast({
-                                    title: "Nao foi possivel excluir",
+                                    title: "Não foi possível excluir",
                                     description: "Tente novamente.",
                                     variant: "error",
                                   })
@@ -820,8 +817,8 @@ export function TasksPage({
                                 type="button"
                                 variant="ghost"
                                 size="icon-sm"
-                                className="rounded-xl text-destructive hover:text-destructive"
-                                aria-label="Delete"
+                                className="shrink-0 rounded-xl text-destructive hover:text-destructive"
+                                aria-label="Excluir"
                               >
                                 <Trash2 className="size-4" />
                               </Button>
@@ -833,7 +830,7 @@ export function TasksPage({
                           return (
                             <CardContent className="space-y-4 p-6">
                               {content}
-                              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-3">
+                              <div className="flex flex-nowrap items-center justify-end gap-2 border-t border-border/60 pt-3">
                                 {actionItems}
                               </div>
                             </CardContent>
@@ -843,7 +840,7 @@ export function TasksPage({
                         return (
                           <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-start">
                             {content}
-                            <div className="flex flex-wrap items-center justify-start gap-2 sm:ml-auto sm:justify-end">
+                            <div className="flex flex-nowrap items-center justify-start gap-2 sm:ml-auto sm:justify-end">
                               {actionItems}
                             </div>
                           </CardContent>

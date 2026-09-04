@@ -88,9 +88,9 @@ function HistoryPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">History</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Histórico</h1>
         <p className="text-sm text-muted-foreground">
-          Review punches and tasks by day, or across a date range.
+          Revise batidas e tarefas por dia ou em um intervalo de datas.
         </p>
       </header>
 
@@ -99,18 +99,18 @@ function HistoryPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div className="space-y-2">
               <div className="text-sm font-medium text-muted-foreground">
-                Filter
+                Filtrar
               </div>
               <Select.Root
                 value={mode}
                 onValueChange={(value) => setMode(value as FilterMode)}
               >
                 <SelectTrigger className="h-11 w-full rounded-2xl sm:w-[14rem]">
-                  <SelectValue placeholder="Select filter" />
+                  <SelectValue placeholder="Selecione o filtro" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="single">Single day</SelectItem>
-                  <SelectItem value="range">Date range</SelectItem>
+                  <SelectItem value="single">Dia único</SelectItem>
+                  <SelectItem value="range">Intervalo de datas</SelectItem>
                 </SelectContent>
               </Select.Root>
             </div>
@@ -118,7 +118,7 @@ function HistoryPage() {
             {mode === "single" ? (
               <div className="space-y-2">
                 <div className="text-sm font-medium text-muted-foreground">
-                  Day
+                  Dia
                 </div>
                 <DatePicker
                   value={singleDate}
@@ -133,7 +133,7 @@ function HistoryPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <div className="text-sm font-medium text-muted-foreground">
-                    From
+                    De
                   </div>
                   <DatePicker
                     value={startDate}
@@ -146,7 +146,7 @@ function HistoryPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="text-sm font-medium text-muted-foreground">
-                    To
+                    Até
                   </div>
                   <DatePicker
                     value={endDate}
@@ -174,7 +174,7 @@ function HistoryPage() {
                   setEndDate(end)
                 }}
               >
-                This week
+                Esta semana
               </Button>
               <Button
                 type="button"
@@ -187,7 +187,7 @@ function HistoryPage() {
                   setEndDate(end)
                 }}
               >
-                This month
+                Este mês
               </Button>
             </div>
           ) : null}
@@ -197,7 +197,7 @@ function HistoryPage() {
       {days.length === 0 ? (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
-            Choose a valid date range to see results.
+            Escolha um intervalo de datas válido para ver os resultados.
           </CardContent>
         </Card>
       ) : (
@@ -213,11 +213,11 @@ function HistoryPage() {
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 font-medium">
                         <Clock className="size-4 text-muted-foreground" />
-                        {formatDurationMinutes(day.workedMinutes)} worked
+                        {formatDurationMinutes(day.workedMinutes)} trabalhadas
                       </div>
                       <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 font-medium">
                         <ListTodo className="size-4 text-muted-foreground" />
-                        {formatDurationMinutes(day.taskMinutes)} logged
+                        {formatDurationMinutes(day.taskMinutes)} lançadas
                       </div>
                     </div>
                   </div>
@@ -231,19 +231,19 @@ function HistoryPage() {
 
                 {day.punches.length === 0 && day.tasks.length === 0 ? (
                   <div className="text-sm text-muted-foreground">
-                    No punches or tasks for this day.
+                    Sem batidas ou tarefas para este dia.
                   </div>
                 ) : (
                   <div className="grid gap-6 lg:grid-cols-2">
                     <div className="space-y-3">
                       <div className="text-xs font-semibold tracking-tight text-muted-foreground">
-                        PUNCHES
+                        BATIDAS
                       </div>
                       <Card>
                         <CardContent className="p-0">
                           {day.punches.length === 0 ? (
                             <div className="p-6 text-sm text-muted-foreground">
-                              No punches.
+                              Sem batidas.
                             </div>
                           ) : (
                             <ul className="divide-y">
@@ -266,8 +266,8 @@ function HistoryPage() {
                                       </div>
                                       <div className="text-sm font-medium">
                                         {record.type === "in"
-                                          ? "Clock in"
-                                          : "Clock out"}
+                                          ? "Entrada"
+                                          : "Saída"}
                                       </div>
                                     </div>
                                     <div className="text-sm text-muted-foreground">
@@ -284,13 +284,13 @@ function HistoryPage() {
 
                     <div className="space-y-3">
                       <div className="text-xs font-semibold tracking-tight text-muted-foreground">
-                        TASKS
+                        TAREFAS
                       </div>
                       <Card>
                         <CardContent className="p-0">
                           {day.tasks.length === 0 ? (
                             <div className="p-6 text-sm text-muted-foreground">
-                              No tasks.
+                              Sem tarefas.
                             </div>
                           ) : (
                             <ul className="divide-y">
@@ -315,30 +315,26 @@ function HistoryPage() {
                                         </div>
                                         {task.logged ? (
                                           <Badge className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-                                            Logged
+                                            Lançada
                                           </Badge>
                                         ) : (
                                           <Badge className="bg-muted text-muted-foreground">
-                                            Not logged
+                                            Não lançada
                                           </Badge>
                                         )}
                                       </div>
-                                      {task.logged && task.jiraIssueKey ? (
+                                      {task.jiraIssueKey || task.branchName ? (
                                         <div className="flex flex-wrap items-center gap-2">
-                                          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
-                                            Jira {task.jiraIssueKey}
-                                          </Badge>
+                                          {task.jiraIssueKey ? (
+                                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                                              Jira {task.jiraIssueKey}
+                                            </Badge>
+                                          ) : null}
                                           {task.branchName ? (
                                             <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground sm:max-w-[16rem] sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
                                               {task.branchName}
                                             </Badge>
                                           ) : null}
-                                        </div>
-                                      ) : task.branchName ? (
-                                        <div className="flex flex-wrap items-center gap-2">
-                                          <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground sm:max-w-[16rem] sm:overflow-hidden sm:text-ellipsis sm:whitespace-nowrap">
-                                            {task.branchName}
-                                          </Badge>
                                         </div>
                                       ) : null}
                                     </div>

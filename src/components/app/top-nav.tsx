@@ -22,11 +22,11 @@ type NavItem = {
 }
 
 const items: NavItem[] = [
-  { to: "/", label: "Home", Icon: Home },
-  { to: "/workday-v2", label: "Workday", Icon: PanelLeft },
-  { to: "/point", label: "Punch", Icon: Clock },
-  { to: "/tasks", label: "Tasks", Icon: ClipboardList },
-  { to: "/history", label: "History", Icon: CalendarDays },
+  { to: "/", label: "Início", Icon: Home },
+  { to: "/workday-v2", label: "Jornada", Icon: PanelLeft },
+  { to: "/point", label: "Batidas", Icon: Clock },
+  { to: "/tasks", label: "Tarefas", Icon: ClipboardList },
+  { to: "/history", label: "Histórico", Icon: CalendarDays },
 ]
 
 export function TopNav() {
@@ -75,7 +75,7 @@ export function TopNav() {
                 variant="ghost"
                 size="icon"
                 className="rounded-xl sm:hidden"
-                aria-label="Open menu"
+                aria-label="Abrir menu"
               >
                 <Menu className="size-4" />
               </Button>
@@ -90,7 +90,7 @@ export function TopNav() {
                 </Link>
                 <Drawer.Close asChild>
                   <Button type="button" variant="ghost" size="icon" className="rounded-xl">
-                    <span className="sr-only">Close menu</span>
+                    <span className="sr-only">Fechar menu</span>
                     {"✕"}
                   </Button>
                 </Drawer.Close>

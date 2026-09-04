@@ -85,8 +85,8 @@ export const Route = createFileRoute("/_app/workday-v2")({
 })
 
 const createTaskSchema = z.object({
-  description: z.string().min(1, "Enter a description"),
-  project: z.string().min(1, "Select a project"),
+  description: z.string().min(1, "Informe uma descrição"),
+  project: z.string().min(1, "Selecione um projeto"),
   date: z.date(),
   duration: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
   logged: z.boolean().default(false),
@@ -126,7 +126,7 @@ async function copyToClipboard(value: string) {
     return
   }
   if (typeof document === "undefined") {
-    throw new Error("Clipboard unavailable")
+    throw new Error("Área de transferência indisponível")
   }
   const textarea = document.createElement("textarea")
   textarea.value = value
@@ -139,7 +139,7 @@ async function copyToClipboard(value: string) {
   const didCopy = document.execCommand("copy")
   document.body.removeChild(textarea)
   if (!didCopy) {
-    throw new Error("Clipboard unavailable")
+    throw new Error("Área de transferência indisponível")
   }
 }
 
@@ -285,7 +285,7 @@ function WorkdayV2() {
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground">
-            Versao nova com drawers laterais e visualizacao de semana.
+            Versão nova com drawers laterais e visualização de semana.
           </p>
         </div>
 
@@ -332,7 +332,7 @@ function WorkdayV2() {
               size="icon-sm"
               className="rounded-xl cursor-pointer"
               onClick={() => navigateWeek(1)}
-              aria-label="Proxima semana"
+              aria-label="Próxima semana"
             >
               <ChevronRight className="size-4" />
             </Button>
@@ -411,7 +411,7 @@ function WorkdayV2() {
             </div>
             <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
               <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Horas semanais em tasks
+                Horas semanais em tarefas
               </div>
               <div className="mt-2 text-2xl font-semibold tracking-tight">
                 {formatDurationMinutes(weekTaskMinutes)}
@@ -467,7 +467,7 @@ function WorkdayV2() {
               <div className="rounded-2xl border border-border/60 bg-card p-4">
                 <div className="flex items-center gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   <ListTodo className="size-3.5" />
-                  Horas em tasks
+                  Horas em tarefas
                 </div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight">
                   {formatDurationMinutes(totalTaskMinutes)}
@@ -477,7 +477,7 @@ function WorkdayV2() {
 
             <div className="mt-4 w-full max-w-md rounded-2xl border border-border/60 bg-card p-4">
               <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Ultimo ponto sugerido
+                Último ponto sugerido
               </div>
               <div className="mt-2 text-lg font-semibold tracking-tight">
                 {suggestedLastPunch}
@@ -510,7 +510,7 @@ function WorkdayV2() {
                 <ListChecks className="size-5" />
                 <div className="flex flex-col items-start">
                   <span className="text-sm font-semibold leading-none">
-                    Tasks
+                    Tarefas
                   </span>
                   <span className="mt-1 text-[0.7rem] font-normal text-primary-foreground/80">
                     {activeEntries.length} tarefas
@@ -648,14 +648,14 @@ function PunchDrawer({
         timestamp: next.toISOString(),
       })
       toast({
-        title: "Batida atualizada",
-        description: `${draftType === "in" ? "Entrada" : "Saida"} • ${formatClockTime(next)}`,
+        title: "Sucesso!",
+        description: `${draftType === "in" ? "Entrada" : "Saída"} atualizada para ${formatClockTime(next)}.`,
         variant: "success",
       })
       setEditingId(null)
     } catch {
       toast({
-        title: "Nao foi possivel atualizar",
+        title: "Não foi possível atualizar",
         description: "Tente novamente.",
         variant: "error",
       })
@@ -665,7 +665,7 @@ function PunchDrawer({
   const primaryAction =
     nextType === "out"
       ? {
-        label: "Registrar saida",
+        label: "Registrar saída",
         Icon: LogOut,
         className:
           "h-12 rounded-2xl bg-rose-500 px-6 text-base text-white shadow-sm hover:bg-rose-600",
@@ -732,13 +732,13 @@ function PunchDrawer({
                   try {
                     await addRecord(nextType, timestamp)
                     toast({
-                      title: "Batida registrada",
-                      description: `${nextType === "in" ? "Entrada" : "Saida"} • ${formatClockTime(timestamp)}`,
+                      title: "Sucesso!",
+                      description: `${nextType === "in" ? "Entrada" : "Saída"} registrada às ${formatClockTime(timestamp)}.`,
                       variant: "success",
                     })
                   } catch {
                     toast({
-                      title: "Nao foi possivel registrar",
+                      title: "Não foi possível registrar",
                       description: "Tente novamente.",
                       variant: "error",
                     })
@@ -766,7 +766,7 @@ function PunchDrawer({
             </div>
             <div className="rounded-2xl border border-border/60 bg-card p-4">
               <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Ultimo ponto sugerido
+                Último ponto sugerido
               </div>
               <div className="mt-2 text-xl font-semibold tracking-tight">
                 {suggestedLastPunch}
@@ -785,7 +785,7 @@ function PunchDrawer({
                 REGISTROS DO DIA
               </h3>
               <p className="text-xs text-muted-foreground">
-                Historico das batidas do dia selecionado.
+                Histórico das batidas do dia selecionado.
               </p>
             </div>
 
@@ -843,21 +843,21 @@ function PunchDrawer({
                                   </Button>
                                   <ConfirmDialog
                                     title="Excluir batida?"
-                                    description="Essa acao nao pode ser desfeita."
+                                    description="Essa ação não pode ser desfeita."
                                     confirmLabel="Excluir"
                                     onConfirm={async () => {
                                       try {
                                         await removeRecord(record.id)
                                         toast({
-                                          title: "Batida excluida",
-                                          description: `${record.type === "in" ? "Entrada" : "Saida"} • ${formatClockTime(
+                                          title: "Sucesso!",
+                                          description: `${record.type === "in" ? "Entrada" : "Saída"} excluída das ${formatClockTime(
                                             new Date(record.timestamp)
-                                          )}`,
+                                          )}.`,
                                           variant: "success",
                                         })
                                       } catch {
                                         toast({
-                                          title: "Nao foi possivel excluir",
+                                          title: "Não foi possível excluir",
                                           description: "Tente novamente.",
                                           variant: "error",
                                         })
@@ -904,7 +904,7 @@ function PunchDrawer({
                                       className="h-9 rounded-xl px-3"
                                       onClick={() => setDraftType("out")}
                                     >
-                                      Saida
+                                      Saída
                                     </Button>
                                   </div>
 
@@ -969,7 +969,7 @@ function PunchDrawer({
                               <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
                                 {record.type === "in"
                                   ? "Batida de entrada registrada"
-                                  : "Batida de saida registrada"}
+                                  : "Batida de saída registrada"}
                               </div>
                             )}
                           </div>
@@ -1108,13 +1108,13 @@ function TasksDrawer({
       setNewProjectName("")
       setIsCreatingProject(false)
       toast({
-        title: "Projeto criado",
-        description: saved.name,
+        title: "Sucesso!",
+        description: `Projeto "${saved.name}" foi criado.`,
         variant: "success",
       })
     } catch {
       toast({
-        title: "Nao foi possivel criar o projeto",
+        title: "Não foi possível criar o projeto",
         description: "Tente novamente.",
         variant: "error",
       })
@@ -1152,13 +1152,13 @@ function TasksDrawer({
       try {
         await copyToClipboard(text)
         toast({
-          title: "Descricao copiada",
-          description: text,
+          title: "Sucesso!",
+          description: "Descrição copiada para a área de transferência.",
           variant: "success",
         })
       } catch {
         toast({
-          title: "Nao foi possivel copiar",
+          title: "Não foi possível copiar",
           description: "Tente novamente.",
           variant: "error",
         })
@@ -1179,13 +1179,13 @@ function TasksDrawer({
       try {
         await copyToClipboard(text)
         toast({
-          title: "Descricoes copiadas",
-          description: `${groupEntries.length} task(s) copiadas.`,
+          title: "Sucesso!",
+          description: `${groupEntries.length} descrição(ões) copiada(s).`,
           variant: "success",
         })
       } catch {
         toast({
-          title: "Nao foi possivel copiar",
+          title: "Não foi possível copiar",
           description: "Tente novamente.",
           variant: "error",
         })
@@ -1196,13 +1196,13 @@ function TasksDrawer({
 
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
-      <DrawerContent side="right" className="w-[min(26rem,90vw)] p-0">
+      <DrawerContent side="right" className="w-[min(32rem,90vw)] p-0">
         <div className="flex h-16 shrink-0 items-center justify-between border-b px-5">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
               <ListTodo className="size-4 text-primary" />
               <span className="text-sm font-semibold tracking-tight">
-                Tasks e horas logadas
+                Tarefas e horas logadas
               </span>
             </div>
             <div className="text-xs text-muted-foreground">
@@ -1231,7 +1231,7 @@ function TasksDrawer({
               onClick={openCreate}
             >
               <Plus className="size-4" />
-              Nova task
+              Nova tarefa
             </Button>
 
             <div className="relative">
@@ -1239,7 +1239,7 @@ function TasksDrawer({
               <Input
                 value={query}
                 onChange={(event) => setQuery(event.currentTarget.value)}
-                placeholder="Buscar por descricao ou projeto"
+                placeholder="Buscar por descrição ou projeto"
                 className="h-11 rounded-2xl pl-10"
               />
             </div>
@@ -1257,7 +1257,7 @@ function TasksDrawer({
 
           {groups.length === 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground">
-              Nenhuma task encontrada.
+              Nenhuma tarefa encontrada.
             </div>
           ) : (
             <div className="space-y-5">
@@ -1292,12 +1292,11 @@ function TasksDrawer({
 
                     <div className="space-y-3">
                       {group.entries.map((entry) => {
-                        const jiraBadge =
-                          entry.logged && entry.jiraIssueKey ? (
-                            <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
-                              {entry.jiraIssueKey}
-                            </Badge>
-                          ) : null
+                        const jiraBadge = entry.jiraIssueKey ? (
+                          <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-300">
+                            {entry.jiraIssueKey}
+                          </Badge>
+                        ) : null
 
                         const branchBadge = entry.branchName ? (
                           <Badge className="max-w-full whitespace-normal break-all bg-muted font-mono text-muted-foreground">
@@ -1334,15 +1333,15 @@ function TasksDrawer({
                                 ) : null}
                               </div>
 
-                              <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/60 pt-3">
-                                <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                              <div className="flex flex-nowrap items-center justify-end gap-2 border-t border-border/60 pt-3">
+                                <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
                                   <Clock className="size-4 text-muted-foreground" />
                                   {formatDurationMinutes(entry.durationMinutes)}
                                 </div>
 
-                                <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                                <div className="inline-flex shrink-0 items-center gap-2 rounded-full bg-muted px-3 py-1 text-sm font-medium">
                                   <span className="text-xs text-muted-foreground">
-                                    Logged
+                                    Logado
                                   </span>
                                   <Switch
                                     checked={entry.logged}
@@ -1353,7 +1352,7 @@ function TasksDrawer({
                                         })
                                       } catch {
                                         toast({
-                                          title: "Nao foi possivel atualizar",
+                                          title: "Não foi possível atualizar",
                                           description: "Tente novamente.",
                                           variant: "error",
                                         })
@@ -1366,11 +1365,11 @@ function TasksDrawer({
                                   type="button"
                                   variant="ghost"
                                   size="icon-sm"
-                                  className="rounded-xl"
+                                  className="shrink-0 rounded-xl"
                                   onClick={() =>
                                     handleCopyDescription(entry.description)
                                   }
-                                  aria-label="Copiar descricao"
+                                  aria-label="Copiar descrição"
                                 >
                                   <Copy className="size-4" />
                                 </Button>
@@ -1379,7 +1378,7 @@ function TasksDrawer({
                                   type="button"
                                   variant="ghost"
                                   size="icon-sm"
-                                  className="rounded-xl"
+                                  className="shrink-0 rounded-xl"
                                   onClick={() => openEdit(entry.id)}
                                   aria-label="Editar"
                                 >
@@ -1387,20 +1386,20 @@ function TasksDrawer({
                                 </Button>
 
                                 <ConfirmDialog
-                                  title="Excluir task?"
-                                  description="Essa acao nao pode ser desfeita."
+                                  title="Excluir tarefa?"
+                                  description="Esta ação não pode ser desfeita."
                                   confirmLabel="Excluir"
                                   onConfirm={async () => {
                                     try {
                                       await removeEntry(entry.id)
                                       toast({
-                                        title: "Task excluida",
-                                        description: entry.description,
+                                        title: "Sucesso!",
+                                        description: "A tarefa foi excluída.",
                                         variant: "success",
                                       })
                                     } catch {
                                       toast({
-                                        title: "Nao foi possivel excluir",
+                                        title: "Não foi possível excluir",
                                         description: "Tente novamente.",
                                         variant: "error",
                                       })
@@ -1411,7 +1410,7 @@ function TasksDrawer({
                                     type="button"
                                     variant="ghost"
                                     size="icon-sm"
-                                    className="rounded-xl text-destructive hover:text-destructive"
+                                    className="shrink-0 rounded-xl text-destructive hover:text-destructive"
                                     aria-label="Excluir"
                                   >
                                     <Trash2 className="size-4" />
@@ -1433,9 +1432,9 @@ function TasksDrawer({
         <Dialog.Root open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editingId ? "Editar task" : "Nova task"}</DialogTitle>
+              <DialogTitle>{editingId ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
               <DialogDescription>
-                Escolha projeto, data e duracao.
+                Escolha projeto, data e duração.
               </DialogDescription>
             </DialogHeader>
 
@@ -1447,7 +1446,7 @@ function TasksDrawer({
                   if (durationMinutes <= 0) {
                     form.setError("duration", {
                       type: "validate",
-                      message: "Duracao deve ser > 00:00",
+                      message: "Duração deve ser > 00:00",
                     })
                     return
                   }
@@ -1482,13 +1481,13 @@ function TasksDrawer({
                     try {
                       await updateEntry(editingId, payload)
                       toast({
-                        title: "Task atualizada",
-                        description: payload.description,
+                        title: "Sucesso!",
+                        description: "A tarefa foi atualizada.",
                         variant: "success",
                       })
                     } catch {
                       toast({
-                        title: "Nao foi possivel atualizar",
+                        title: "Não foi possível atualizar",
                         description: "Tente novamente.",
                         variant: "error",
                       })
@@ -1498,13 +1497,13 @@ function TasksDrawer({
                     try {
                       await addEntry(payload)
                       toast({
-                        title: "Task criada",
-                        description: payload.description,
+                        title: "Sucesso!",
+                        description: "A tarefa foi cadastrada.",
                         variant: "success",
                       })
                     } catch {
                       toast({
-                        title: "Nao foi possivel criar",
+                        title: "Não foi possível criar",
                         description: "Tente novamente.",
                         variant: "error",
                       })
@@ -1520,7 +1519,7 @@ function TasksDrawer({
                   name="description"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descricao</FormLabel>
+                      <FormLabel>Descrição</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Ex.: Atualizar layout do dashboard"
@@ -1558,7 +1557,7 @@ function TasksDrawer({
                       <div className="mt-3 space-y-3 rounded-2xl border border-dashed border-border p-3">
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-sm text-muted-foreground">
-                            Nao encontrou o projeto?
+                            Não encontrou o projeto?
                           </div>
                           <Button
                             type="button"
@@ -1649,9 +1648,9 @@ function TasksDrawer({
                   render={({ field }) => (
                     <FormItem className="flex items-center justify-between gap-4 rounded-2xl border border-input p-4">
                       <div className="space-y-0.5">
-                        <FormLabel>Logged</FormLabel>
+                        <FormLabel>Registrado</FormLabel>
                         <div className="text-sm text-muted-foreground">
-                          Ja logado no Jira
+                          Já registrado no Jira
                         </div>
                       </div>
                       <FormControl>

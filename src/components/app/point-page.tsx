@@ -123,14 +123,14 @@ export function PointPage({ activeDayKey }: PointPageProps) {
         timestamp: next.toISOString(),
       })
       toast({
-        title: "Batida atualizada",
-        description: `${draftType === "in" ? "Entrada" : "Saída"} • ${formatClockTime(next)}`,
+        title: "Sucesso!",
+        description: `${draftType === "in" ? "Entrada" : "Saída"} atualizada para ${formatClockTime(next)}.`,
         variant: "success",
       })
       setEditingId(null)
     } catch {
       toast({
-        title: "Nao foi possivel atualizar",
+        title: "Não foi possível atualizar",
         description: "Tente novamente.",
         variant: "error",
       })
@@ -184,13 +184,13 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                   try {
                     await addRecord(nextType, timestamp)
                     toast({
-                      title: "Batida registrada",
-                      description: `${nextType === "in" ? "Entrada" : "Saída"} • ${formatClockTime(timestamp)}`,
+                      title: "Sucesso!",
+                      description: `${nextType === "in" ? "Entrada" : "Saída"} registrada às ${formatClockTime(timestamp)}.`,
                       variant: "success",
                     })
                   } catch {
                     toast({
-                      title: "Nao foi possivel registrar",
+                      title: "Não foi possível registrar",
                       description: "Tente novamente.",
                       variant: "error",
                     })
@@ -327,15 +327,15 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                                   try {
                                     await removeRecord(record.id)
                                     toast({
-                                      title: "Batida excluída",
-                                      description: `${record.type === "in" ? "Entrada" : "Saída"} • ${formatClockTime(
+                                      title: "Sucesso!",
+                                      description: `${record.type === "in" ? "Entrada" : "Saída"} excluída das ${formatClockTime(
                                         new Date(record.timestamp)
-                                      )}`,
+                                      )}.`,
                                       variant: "success",
                                     })
                                   } catch {
                                     toast({
-                                      title: "Nao foi possivel excluir",
+                                      title: "Não foi possível excluir",
                                       description: "Tente novamente.",
                                       variant: "error",
                                     })

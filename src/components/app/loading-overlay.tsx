@@ -51,7 +51,7 @@ function Spinner(props: { className?: string }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="status"
-      aria-label="Loading"
+      aria-label="Carregando"
     >
       <path
         d="M12 2a10 10 0 1 0 10 10"

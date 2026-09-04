@@ -33,7 +33,7 @@ function Index() {
         </div>
         <p className="text-sm text-muted-foreground">
           Comece seu dia escolhendo uma data para abrir o workday ou acesse o
-          historico rapidamente.
+          histórico rapidamente.
         </p>
       </header>
 
@@ -79,15 +79,15 @@ function Index() {
               </div>
               <div className="space-y-1">
                 <span className="text-base font-semibold tracking-tight">
-                  Historico
+                  Histórico
                 </span>
                 <p className="text-xs text-muted-foreground">
-                  Revise batidas e tasks por dia ou intervalo.
+                  Revise batidas e tarefas por dia ou intervalo.
                 </p>
               </div>
               <div className="mt-auto flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
-                  Ver historico
+                  Ver histórico
                 </span>
                 <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               </div>
@@ -103,7 +103,7 @@ function Index() {
               </div>
               <div className="space-y-1">
                 <span className="text-base font-semibold tracking-tight">
-                  Todas as tasks
+                  Todas as tarefas
                 </span>
                 <p className="text-xs text-muted-foreground">
                   Gerencie e pesquise todas as tarefas registradas.
@@ -111,7 +111,7 @@ function Index() {
               </div>
               <div className="mt-auto flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
-                  Ver tasks
+                  Ver tarefas
                 </span>
                 <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
               </div>
@@ -127,7 +127,7 @@ function Index() {
               Abrir workday
             </h2>
             <p className="text-sm text-muted-foreground">
-              Escolha qual dia deseja lancar batidas e tasks.
+              Escolha qual dia deseja lançar batidas e tarefas.
             </p>
           </div>
 

@@ -22,8 +22,8 @@ type Props = {
 export function ConfirmDialog({
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel = "Confirmar",
+  cancelLabel = "Cancelar",
   onConfirm,
   children,
 }: Props) {
