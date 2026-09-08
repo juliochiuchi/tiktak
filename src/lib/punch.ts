@@ -93,3 +93,13 @@ export function groupPunchRecordsByDate(records: PunchRecord[]): PunchRecordsGro
       ),
     }))
 }
+
+export function isHolidayDay(records: PunchRecord[], dayKey: string) {
+  const dayRecords = getRecordsForDay(records, dayKey)
+  if (dayRecords.length !== 2) return false
+  const [first, second] = dayRecords
+  if (!first || !second) return false
+  if (first.type !== "in" || second.type !== "out") return false
+  const totalMinutes = getWorkedMinutesForDayClosed(records, dayKey)
+  return totalMinutes === 8 * 60
+}

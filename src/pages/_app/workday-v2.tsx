@@ -64,6 +64,7 @@ import {
   getRecordsForDay,
   getWorkedMinutesForDay,
   getWorkedMinutesForDayClosed,
+  isHolidayDay,
 } from "@/lib/punch"
 import { groupTasksByDate, getMinutesForDate } from "@/lib/tasks"
 import { dayjs } from "@/lib/dayjs"
@@ -154,6 +155,7 @@ type WeekDay = {
   isSelected: boolean
   hasPunches: boolean
   hasTasks: boolean
+  isHoliday: boolean
   workedMinutes: number
   taskMinutes: number
 }
@@ -206,6 +208,7 @@ function WorkdayV2() {
         isSelected: dayKey === selectedDayKey,
         hasPunches: dayPunches.length > 0,
         hasTasks: dayTasks.length > 0,
+        isHoliday: isHolidayDay(records, dayKey),
         workedMinutes: getWorkedMinutesForDayClosed(records, dayKey),
         taskMinutes: getMinutesForDate(entries, dayKey),
       }
@@ -355,11 +358,21 @@ function WorkdayV2() {
                 onClick={() => handleSelectWeekDay(day.dayKey)}
                 className={cn(
                   "group relative flex flex-col items-center gap-1 rounded-2xl border p-2 sm:p-3 transition-all cursor-pointer",
+                  day.isHoliday && !day.isSelected && "border-teal-300 bg-teal-50 dark:border-teal-500/40 dark:bg-teal-500/10",
                   day.isSelected
                     ? "border-primary bg-primary/5 ring-2 ring-primary/30"
-                    : "border-border/60 hover:border-border hover:bg-muted/40"
+                    : day.isHoliday
+                      ? "border-teal-300 bg-teal-50 hover:bg-teal-100 dark:border-teal-500/40 dark:bg-teal-500/10 dark:hover:bg-teal-500/20"
+                      : "border-border/60 hover:border-border hover:bg-muted/40"
                 )}
               >
+                {day.isHoliday && (
+                  <Badge
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-teal-600 px-2 py-0 text-[0.55rem] font-semibold uppercase tracking-wider text-white shadow-sm dark:bg-teal-500 dark:text-teal-950"
+                  >
+                    Feriado
+                  </Badge>
+                )}
                 <span
                   className={cn(
                     "text-[0.65rem] font-semibold uppercase tracking-wider sm:text-[0.7rem]",
@@ -367,7 +380,9 @@ function WorkdayV2() {
                       ? "text-primary"
                       : day.isSelected
                         ? "text-foreground"
-                        : "text-muted-foreground"
+                        : day.isHoliday
+                          ? "text-teal-700 dark:text-teal-300"
+                          : "text-muted-foreground"
                   )}
                 >
                   {day.dayName}
@@ -379,7 +394,11 @@ function WorkdayV2() {
                     !day.isSelected &&
                     "bg-primary text-primary-foreground",
                     day.isSelected &&
-                    "bg-primary text-primary-foreground"
+                    "bg-primary text-primary-foreground",
+                    day.isHoliday &&
+                    !day.isToday &&
+                    !day.isSelected &&
+                    "bg-teal-600 text-white dark:bg-teal-500 dark:text-teal-950"
                   )}
                 >
                   {day.dayNumber}
@@ -388,7 +407,11 @@ function WorkdayV2() {
                   <span
                     className={cn(
                       "size-1.5 rounded-full sm:size-2",
-                      day.hasPunches ? "bg-emerald-500" : "bg-transparent"
+                      day.isHoliday
+                        ? "bg-teal-600"
+                        : day.hasPunches
+                          ? "bg-emerald-500"
+                          : "bg-transparent"
                     )}
                     aria-hidden
                   />
@@ -400,7 +423,14 @@ function WorkdayV2() {
                     aria-hidden
                   />
                 </div>
-                <div className="mt-1 line-clamp-1 text-[0.6rem] font-medium text-muted-foreground sm:text-[0.7rem]">
+                <div
+                  className={cn(
+                    "mt-1 line-clamp-1 text-[0.6rem] font-medium sm:text-[0.7rem]",
+                    day.isHoliday
+                      ? "text-teal-700 dark:text-teal-300"
+                      : "text-muted-foreground"
+                  )}
+                >
                   {formatDurationMinutes(day.workedMinutes + day.taskMinutes)}
                 </div>
               </button>

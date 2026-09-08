@@ -16,7 +16,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { usePunchRecords } from "@/hooks/use-punch-records"
 import { useTaskEntries } from "@/hooks/use-task-entries"
-import { getRecordsForDay, getWorkedMinutesForDayClosed } from "@/lib/punch"
+import { getRecordsForDay, getWorkedMinutesForDayClosed, isHolidayDay } from "@/lib/punch"
 import { getMinutesForDate } from "@/lib/tasks"
 import { dayjs } from "@/lib/dayjs"
 import {
@@ -27,6 +27,7 @@ import {
   getDayKeysInRange,
   parseDayKey,
 } from "@/lib/time"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/history")({
   component: HistoryPage,
@@ -79,6 +80,7 @@ function HistoryPage() {
         dayDate,
         punches: dayPunches,
         tasks: dayTasks,
+        isHoliday: isHolidayDay(records, dayKey),
         workedMinutes: getWorkedMinutesForDayClosed(records, dayKey),
         taskMinutes: getMinutesForDate(entries, dayKey),
       }
@@ -235,12 +237,22 @@ function HistoryPage() {
       ) : (
         <div className="space-y-6">
           {days.map((day) => (
-            <Card key={day.dayKey} className="overflow-hidden">
+            <Card key={day.dayKey} className={cn(
+              "overflow-hidden",
+              day.isHoliday && "border-teal-300 bg-teal-50/50 dark:border-teal-500/40 dark:bg-teal-500/5"
+            )}>
               <CardContent className="space-y-6 p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-1">
-                    <div className="text-sm font-semibold tracking-tight text-muted-foreground">
-                      {formatDateWithWeekday(day.dayDate)}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-sm font-semibold tracking-tight text-muted-foreground">
+                        {formatDateWithWeekday(day.dayDate)}
+                      </div>
+                      {day.isHoliday && (
+                        <Badge className="rounded-full bg-teal-600 px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider text-white dark:bg-teal-500 dark:text-teal-950">
+                          Feriado
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 font-medium">
@@ -254,7 +266,10 @@ function HistoryPage() {
                     </div>
                   </div>
 
-                  <Badge className="w-fit bg-primary/10 text-primary">
+                  <Badge className={cn(
+                    "w-fit",
+                    day.isHoliday ? "bg-teal-600/10 text-teal-700 dark:text-teal-300" : "bg-primary/10 text-primary"
+                  )}>
                     {day.dayKey}
                   </Badge>
                 </div>
