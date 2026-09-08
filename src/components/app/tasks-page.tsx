@@ -759,6 +759,13 @@ export function TasksPage({
                                       logged: checked,
                                       jiraIssueKey: checked ? entry.jiraIssueKey : "",
                                     })
+                                    toast({
+                                      title: "Sucesso!",
+                                      description: checked
+                                        ? "Tarefa marcada como logada."
+                                        : "Tarefa desmarcada como logada.",
+                                      variant: "success",
+                                    })
                                   } catch {
                                     toast({
                                       title: "Não foi possível atualizar",

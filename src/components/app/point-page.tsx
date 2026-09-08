@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, LogIn, LogOut, Pencil, Trash2, X } from "lucide-react"
+import { CalendarX2, Check, LogIn, LogOut, Pencil, Trash2, X } from "lucide-react"
 
 import { ConfirmDialog } from "@/components/app/confirm-dialog"
 import { Card, CardContent } from "@/components/ui/card"
@@ -152,6 +152,37 @@ export function PointPage({ activeDayKey }: PointPageProps) {
           "h-12 rounded-2xl bg-emerald-500 px-6 text-base text-white shadow-sm hover:bg-emerald-600",
       }
 
+  async function handleHolidayPunch() {
+    const entryTimestamp = dayjs(dayDate)
+      .hour(7)
+      .minute(0)
+      .second(0)
+      .millisecond(0)
+      .toDate()
+    const exitTimestamp = dayjs(dayDate)
+      .hour(15)
+      .minute(0)
+      .second(0)
+      .millisecond(0)
+      .toDate()
+
+    try {
+      await addRecord("in", entryTimestamp)
+      await addRecord("out", exitTimestamp)
+      toast({
+        title: "Sucesso!",
+        description: "Feriado registrado: 07:00 às 15:00 (8h trabalhadas).",
+        variant: "success",
+      })
+    } catch {
+      toast({
+        title: "Não foi possível registrar",
+        description: "Tente novamente.",
+        variant: "error",
+      })
+    }
+  }
+
   return (
     <div className="space-y-8">
       <Card className="overflow-hidden border-border/70 bg-linear-to-b from-background via-background to-muted/40 shadow-sm">
@@ -170,7 +201,7 @@ export function PointPage({ activeDayKey }: PointPageProps) {
               {formatDateWithWeekday(dayDate)}
             </div>
 
-            <div className="mt-6 w-full max-w-md">
+            <div className="mt-6 w-full max-w-md space-y-2 sm:space-y-3">
               <Button
                 onClick={async () => {
                   const timestamp = isToday
@@ -200,6 +231,14 @@ export function PointPage({ activeDayKey }: PointPageProps) {
               >
                 <primaryAction.Icon className="size-4" />
                 {primaryAction.label}
+              </Button>
+              <Button
+                onClick={handleHolidayPunch}
+                variant="outline"
+                className="h-11 w-full justify-center rounded-2xl px-5 text-sm sm:w-auto sm:min-w-52"
+              >
+                <CalendarX2 className="size-4" />
+                Registrar feriado (07:00 às 15:00)
               </Button>
             </div>
           </div>

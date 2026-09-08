@@ -3,6 +3,7 @@ import { Link, createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 import {
   CalendarDays,
+  CalendarX2,
   ChevronLeft,
   ChevronRight,
   Clock,
@@ -710,6 +711,37 @@ function PunchDrawer({
           "h-12 rounded-2xl bg-emerald-500 px-6 text-base text-white shadow-sm hover:bg-emerald-600",
       }
 
+  async function handleHolidayPunch() {
+    const entryTimestamp = dayjs(dayDate)
+      .hour(7)
+      .minute(0)
+      .second(0)
+      .millisecond(0)
+      .toDate()
+    const exitTimestamp = dayjs(dayDate)
+      .hour(15)
+      .minute(0)
+      .second(0)
+      .millisecond(0)
+      .toDate()
+
+    try {
+      await addRecord("in", entryTimestamp)
+      await addRecord("out", exitTimestamp)
+      toast({
+        title: "Sucesso!",
+        description: "Feriado registrado: 07:00 às 15:00 (8h trabalhadas).",
+        variant: "success",
+      })
+    } catch {
+      toast({
+        title: "Não foi possível registrar",
+        description: "Tente novamente.",
+        variant: "error",
+      })
+    }
+  }
+
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <DrawerContent side="left" className="w-[min(24rem,90vw)] p-0">
@@ -751,7 +783,7 @@ function PunchDrawer({
             <div className="mt-2 text-xs text-muted-foreground">
               {formatDateWithWeekday(dayDate)}
             </div>
-            <div className="mt-4">
+            <div className="mt-4 space-y-2">
               <Button
                 onClick={async () => {
                   const timestamp = isToday
@@ -781,6 +813,14 @@ function PunchDrawer({
               >
                 <primaryAction.Icon className="size-4" />
                 {primaryAction.label}
+              </Button>
+              <Button
+                onClick={handleHolidayPunch}
+                variant="outline"
+                className="h-11 w-full justify-center rounded-2xl px-5 text-sm"
+              >
+                <CalendarX2 className="size-4" />
+                Registrar feriado (07:00 às 15:00)
               </Button>
             </div>
           </div>
@@ -1382,6 +1422,13 @@ function TasksDrawer({
                                       try {
                                         await updateEntry(entry.id, {
                                           logged: checked,
+                                        })
+                                        toast({
+                                          title: "Sucesso!",
+                                          description: checked
+                                            ? "Tarefa marcada como logada."
+                                            : "Tarefa desmarcada como logada.",
+                                          variant: "success",
                                         })
                                       } catch {
                                         toast({
