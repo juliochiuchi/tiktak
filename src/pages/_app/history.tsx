@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { ArrowRight, Clock, ClipboardList, ListTodo, PanelLeft } from "lucide-react"
+import { ArrowRight, CalendarX2, Clock, ClipboardList, ListTodo, PanelLeft } from "lucide-react"
 
 import { DatePicker } from "@/components/app/date-picker"
 import { Badge } from "@/components/ui/badge"
@@ -306,19 +306,29 @@ function HistoryPage() {
                                         className={
                                           record.type === "in"
                                             ? "grid size-9 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                            : "grid size-9 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                                            : record.type === "out"
+                                              ? "grid size-9 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                                              : "grid size-9 place-items-center rounded-2xl bg-teal-500/15 text-teal-600 dark:text-teal-400"
                                         }
                                       >
-                                        <Clock className="size-4" />
+                                        {record.type === "holiday" ? (
+                                          <CalendarX2 className="size-4" />
+                                        ) : (
+                                          <Clock className="size-4" />
+                                        )}
                                       </div>
                                       <div className="text-sm font-medium">
                                         {record.type === "in"
                                           ? "Entrada"
-                                          : "Saída"}
+                                          : record.type === "out"
+                                            ? "Saída"
+                                            : "Feriado"}
                                       </div>
                                     </div>
                                     <div className="text-sm text-muted-foreground">
-                                      {formatClockTime(new Date(record.timestamp))}
+                                      {record.type === "holiday"
+                                        ? "—"
+                                        : formatClockTime(new Date(record.timestamp))}
                                     </div>
                                   </Link>
                                 </li>

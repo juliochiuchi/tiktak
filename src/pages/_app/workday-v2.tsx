@@ -64,6 +64,7 @@ import {
   getRecordsForDay,
   getWorkedMinutesForDay,
   getWorkedMinutesForDayClosed,
+  hasHolidayRecordForDay,
   isHolidayDay,
 } from "@/lib/punch"
 import { groupTasksByDate, getMinutesForDate } from "@/lib/tasks"
@@ -431,7 +432,7 @@ function WorkdayV2() {
                       : "text-muted-foreground"
                   )}
                 >
-                  {formatDurationMinutes(day.workedMinutes + day.taskMinutes)}
+                  {formatDurationMinutes(day.workedMinutes)}
                 </div>
               </button>
             ))}
@@ -620,7 +621,7 @@ function PunchDrawer({
   const { toast } = useToast()
   const [now, setNow] = React.useState(() => new Date())
   const [editingId, setEditingId] = React.useState<string | null>(null)
-  const [draftType, setDraftType] = React.useState<"in" | "out">("in")
+  const [draftType, setDraftType] = React.useState<"in" | "out" | "holiday">("in")
   const [draftDate, setDraftDate] = React.useState<Date>(() => new Date())
   const [draftTime, setDraftTime] = React.useState("00:00")
 
@@ -697,23 +698,42 @@ function PunchDrawer({
 
   async function saveEdit() {
     if (!editingId) return
+    const record = records.find((item) => item.id === editingId)
+    if (!record) return
+    const isHoliday = draftType === "holiday"
+    const dayKey = getDayKey(new Date(record.timestamp))
+
+    if (isHoliday && hasHolidayRecordForDay(records, dayKey, editingId)) {
+      toast({
+        title: "Não permitido",
+        description: "Esse dia já possui um feriado cadastrado.",
+        variant: "error",
+      })
+      return
+    }
+
     const time = parseTimeInput(draftTime)
-    if (!time) return
-    const next = dayjs(draftDate)
-      .hour(time.hours)
-      .minute(time.minutes)
-      .second(0)
-      .millisecond(0)
-      .toDate()
+    if (!isHoliday && !time) return
+    const next = isHoliday
+      ? dayjs(record.timestamp).startOf("day").toDate()
+      : dayjs(record.timestamp)
+        .hour(time!.hours)
+        .minute(time!.minutes)
+        .second(0)
+        .millisecond(0)
+        .toDate()
 
     try {
       await updateRecord(editingId, {
         type: draftType,
         timestamp: next.toISOString(),
+        holiday: isHoliday,
       })
       toast({
         title: "Sucesso!",
-        description: `${draftType === "in" ? "Entrada" : "Saída"} atualizada para ${formatClockTime(next)}.`,
+        description: isHoliday
+          ? "Feriado atualizado para o dia."
+          : `${draftType === "in" ? "Entrada" : "Saída"} atualizada para ${formatClockTime(next)}.`,
         variant: "success",
       })
       setEditingId(null)
@@ -742,25 +762,25 @@ function PunchDrawer({
       }
 
   async function handleHolidayPunch() {
-    const entryTimestamp = dayjs(dayDate)
-      .hour(7)
-      .minute(0)
-      .second(0)
-      .millisecond(0)
-      .toDate()
-    const exitTimestamp = dayjs(dayDate)
-      .hour(15)
-      .minute(0)
-      .second(0)
-      .millisecond(0)
+    const dayKey = getDayKey(dayDate)
+    if (hasHolidayRecordForDay(records, dayKey)) {
+      toast({
+        title: "Não permitido",
+        description: "Esse dia já possui um feriado cadastrado.",
+        variant: "error",
+      })
+      return
+    }
+
+    const holidayTimestamp = dayjs(dayDate)
+      .startOf("day")
       .toDate()
 
     try {
-      await addRecord("in", entryTimestamp)
-      await addRecord("out", exitTimestamp)
+      await addRecord("holiday", holidayTimestamp)
       toast({
         title: "Sucesso!",
-        description: "Feriado registrado: 07:00 às 15:00 (8h trabalhadas).",
+        description: "Feriado registrado para o dia.",
         variant: "success",
       })
     } catch {
@@ -850,7 +870,7 @@ function PunchDrawer({
                 className="h-11 w-full justify-center rounded-2xl px-5 text-sm"
               >
                 <CalendarX2 className="size-4" />
-                Registrar feriado (07:00 às 15:00)
+                Registrar feriado
               </Button>
             </div>
           </div>
@@ -913,21 +933,27 @@ function PunchDrawer({
                                   className={
                                     record.type === "in"
                                       ? "grid size-10 shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                      : "grid size-10 shrink-0 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                                      : record.type === "out"
+                                        ? "grid size-10 shrink-0 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                                        : "grid size-10 shrink-0 place-items-center rounded-2xl bg-teal-500/15 text-teal-600 dark:text-teal-400"
                                   }
                                 >
                                   {record.type === "in" ? (
                                     <LogIn className="size-4" />
-                                  ) : (
+                                  ) : record.type === "out" ? (
                                     <LogOut className="size-4" />
+                                  ) : (
+                                    <CalendarX2 className="size-4" />
                                   )}
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                    Hora da batida
+                                    {record.type === "holiday" ? "Tipo" : "Hora da batida"}
                                   </div>
                                   <div className="mt-1 text-2xl font-semibold tracking-tight tabular-nums">
-                                    {formatClockTime(recordDate)}
+                                    {record.type === "holiday"
+                                      ? "Feriado"
+                                      : formatClockTime(recordDate)}
                                   </div>
                                 </div>
                               </div>
@@ -953,9 +979,12 @@ function PunchDrawer({
                                         await removeRecord(record.id)
                                         toast({
                                           title: "Sucesso!",
-                                          description: `${record.type === "in" ? "Entrada" : "Saída"} excluída das ${formatClockTime(
-                                            new Date(record.timestamp)
-                                          )}.`,
+                                          description:
+                                            record.type === "holiday"
+                                              ? "Feriado excluído do dia."
+                                              : `${record.type === "in" ? "Entrada" : "Saída"} excluída das ${formatClockTime(
+                                                new Date(record.timestamp)
+                                              )}.`,
                                           variant: "success",
                                         })
                                       } catch {
@@ -1009,6 +1038,15 @@ function PunchDrawer({
                                     >
                                       Saída
                                     </Button>
+                                    <Button
+                                      type="button"
+                                      variant={draftType === "holiday" ? "secondary" : "outline"}
+                                      size="sm"
+                                      className="h-9 rounded-xl px-3"
+                                      onClick={() => setDraftType("holiday")}
+                                    >
+                                      Feriado
+                                    </Button>
                                   </div>
 
                                   <div className="grid gap-3">
@@ -1019,13 +1057,7 @@ function PunchDrawer({
                                       <Input
                                         type="date"
                                         value={getDayKey(draftDate)}
-                                        onChange={(event) => {
-                                          const next = parseDayKey(
-                                            event.currentTarget.value
-                                          )
-                                          if (!next) return
-                                          setDraftDate(next)
-                                        }}
+                                        disabled
                                         onKeyDown={handleEditKeyDown}
                                         className="h-10 rounded-xl bg-background"
                                       />
@@ -1040,12 +1072,18 @@ function PunchDrawer({
                                         onChange={setDraftTime}
                                         onKeyDown={handleEditKeyDown}
                                         placeholder="HH:MM"
+                                        disabled={draftType === "holiday"}
                                         className="h-10 rounded-xl bg-background"
                                       />
                                     </label>
                                   </div>
 
                                   <div className="flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <p className="text-xs text-muted-foreground">
+                                      {draftType === "holiday"
+                                        ? "Registro de feriado não contabiliza horas."
+                                        : "Pressione Enter em data ou hora para salvar."}
+                                    </p>
                                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                                       <Button
                                         type="button"
@@ -1059,7 +1097,7 @@ function PunchDrawer({
                                       <Button
                                         type="submit"
                                         className="h-9 w-full rounded-xl px-3 sm:w-auto"
-                                        disabled={!parseTimeInput(draftTime)}
+                                        disabled={draftType !== "holiday" && !parseTimeInput(draftTime)}
                                       >
                                         <Check className="size-4" />
                                         Salvar
@@ -1072,7 +1110,9 @@ function PunchDrawer({
                               <div className="rounded-xl border border-border/60 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
                                 {record.type === "in"
                                   ? "Batida de entrada registrada"
-                                  : "Batida de saída registrada"}
+                                  : record.type === "out"
+                                    ? "Batida de saída registrada"
+                                    : "Feriado registrado"}
                               </div>
                             )}
                           </div>

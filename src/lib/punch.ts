@@ -20,7 +20,9 @@ export function getWorkedMinutesForDay(
   dayKey: string,
   now: Date = new Date()
 ) {
-  const dayRecords = getRecordsForDay(records, dayKey)
+  const dayRecords = getRecordsForDay(records, dayKey).filter(
+    (r) => r.type !== "holiday" && !r.holiday
+  )
   let currentStart: Date | null = null
   let totalMinutes = 0
 
@@ -45,7 +47,9 @@ export function getWorkedMinutesForDay(
 }
 
 export function getWorkedMinutesForDayClosed(records: PunchRecord[], dayKey: string) {
-  const dayRecords = getRecordsForDay(records, dayKey)
+  const dayRecords = getRecordsForDay(records, dayKey).filter(
+    (r) => r.type !== "holiday" && !r.holiday
+  )
   let currentStart: Date | null = null
   let totalMinutes = 0
 
@@ -96,10 +100,24 @@ export function groupPunchRecordsByDate(records: PunchRecord[]): PunchRecordsGro
 
 export function isHolidayDay(records: PunchRecord[], dayKey: string) {
   const dayRecords = getRecordsForDay(records, dayKey)
+  if (dayRecords.some((r) => r.type === "holiday" || r.holiday)) return true
   if (dayRecords.length !== 2) return false
   const [first, second] = dayRecords
   if (!first || !second) return false
   if (first.type !== "in" || second.type !== "out") return false
   const totalMinutes = getWorkedMinutesForDayClosed(records, dayKey)
   return totalMinutes === 8 * 60
+}
+
+export function hasHolidayRecordForDay(
+  records: PunchRecord[],
+  dayKey: string,
+  excludeId?: string
+): boolean {
+  const dayRecords = getRecordsForDay(records, dayKey)
+  return dayRecords.some(
+    (r) =>
+      (r.type === "holiday" || r.holiday) &&
+      (excludeId === undefined || r.id !== excludeId)
+  )
 }

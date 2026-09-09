@@ -1,3 +1,4 @@
+import { dayjs } from "@/lib/dayjs"
 import {
   projectSchema,
   projectsSchema,
@@ -24,8 +25,10 @@ type TaskEntryRow = {
 
 type PunchRecordRow = {
   id: string
-  punch_type: "in" | "out"
-  punched_at: string
+  punch_type: "in" | "out" | "holiday"
+  punched_at: string | null
+  holiday: boolean | null
+  created_at?: string | null
 }
 
 type ProjectRow = {
@@ -65,18 +68,42 @@ function toTaskEntryRow(entry: TaskEntry): TaskEntryRow {
 }
 
 function toPunchRecord(row: PunchRecordRow): PunchRecord {
+  const isHoliday = (row.holiday ?? false) || row.punch_type === "holiday"
+  const fallback = dayjs().toISOString()
+  const referenceDate = row.punched_at ?? row.created_at ?? fallback
+  const timestamp: string = isHoliday
+    ? dayjs(referenceDate).startOf("day").toISOString()
+    : (row.punched_at ?? dayjs(referenceDate).toISOString())
+
   return {
     id: row.id,
     type: row.punch_type,
-    timestamp: row.punched_at,
+    timestamp,
+    holiday: isHoliday,
   }
 }
 
-function toPunchRecordRow(record: PunchRecord): PunchRecordRow {
+type PunchRecordWriteRow = {
+  id: string
+  punch_type: "in" | "out" | "holiday"
+  punched_at: string
+  holiday: boolean
+  created_at: string
+}
+
+function toPunchRecordRow(record: PunchRecord): PunchRecordWriteRow {
+  const isHoliday = record.holiday ?? record.type === "holiday"
+  if (!record.timestamp) {
+    throw new Error(
+      `PunchRecord timestamp is required (type=${record.type}, id=${record.id})`
+    )
+  }
   return {
     id: record.id,
     punch_type: record.type,
     punched_at: record.timestamp,
+    holiday: isHoliday,
+    created_at: new Date().toISOString(),
   }
 }
 
@@ -197,28 +224,53 @@ export async function listPunchRecords(): Promise<PunchRecord[]> {
 }
 
 export async function createPunchRecord(record: PunchRecord): Promise<PunchRecord> {
-  const response = await supabaseHttp.post<PunchRecordRow[]>("/punch_records", toPunchRecordRow(record), {
+  const rowToWrite = toPunchRecordRow(record)
+  const response = await supabaseHttp.post<PunchRecordRow[]>("/punch_records", rowToWrite, {
     params: { select: "*" },
     headers: { Prefer: "return=representation" },
   })
   const row = response.data[0]
-  return punchRecordsSchema.element.parse(toPunchRecord(row))
+  if (!row) return record
+  const resolved: PunchRecordRow = {
+    ...row,
+    punched_at: row.punched_at ?? rowToWrite.punched_at,
+    holiday: row.holiday ?? rowToWrite.holiday,
+    created_at: row.created_at ?? rowToWrite.created_at,
+  }
+  return punchRecordsSchema.element.parse(toPunchRecord(resolved))
 }
 
 export async function updatePunchRecord(
   id: string,
   updates: Partial<Omit<PunchRecord, "id">>
 ): Promise<PunchRecord> {
-  const rowUpdates: Partial<PunchRecordRow> = {}
-  if (updates.type !== undefined) rowUpdates.punch_type = updates.type
-  if (updates.timestamp !== undefined) rowUpdates.punched_at = updates.timestamp
+  const rowUpdates: Partial<PunchRecordWriteRow> = {}
+  if (updates.type !== undefined) {
+    rowUpdates.punch_type = updates.type
+  }
+  if (updates.timestamp !== undefined) {
+    rowUpdates.punched_at = updates.timestamp
+  }
+  const effectiveIsHoliday =
+    updates.holiday ??
+    (updates.type !== undefined ? updates.type === "holiday" : undefined)
+  if (effectiveIsHoliday !== undefined) {
+    rowUpdates.holiday = Boolean(effectiveIsHoliday)
+  }
 
   const response = await supabaseHttp.patch<PunchRecordRow[]>("/punch_records", rowUpdates, {
     params: { id: `eq.${id}`, select: "*" },
     headers: { Prefer: "return=representation" },
   })
   const row = response.data[0]
-  return punchRecordsSchema.element.parse(toPunchRecord(row))
+  if (!row) throw new Error(`PunchRecord not found after update: ${id}`)
+  const resolved: PunchRecordRow = {
+    ...row,
+    punched_at: row.punched_at ?? rowUpdates.punched_at ?? row.created_at ?? undefined,
+    holiday: row.holiday ?? rowUpdates.holiday ?? false,
+    created_at: row.created_at,
+  }
+  return punchRecordsSchema.element.parse(toPunchRecord(resolved))
 }
 
 export async function deletePunchRecord(id: string): Promise<void> {

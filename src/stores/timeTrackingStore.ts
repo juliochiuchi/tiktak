@@ -1,3 +1,4 @@
+import { dayjs } from "@/lib/dayjs"
 import {
   type Project,
   type PunchRecord,
@@ -175,11 +176,21 @@ export async function removeTaskEntry(id: string): Promise<void> {
   notifyTaskEntries()
 }
 
-export async function addPunchRecord(type: PunchType, timestamp: Date = new Date()): Promise<PunchRecord> {
+export async function addPunchRecord(
+  type: PunchType,
+  timestamp?: Date,
+  holiday?: boolean
+): Promise<PunchRecord> {
+  const isHoliday = holiday ?? type === "holiday"
+  const effectiveTimestamp = isHoliday
+    ? dayjs(timestamp).startOf("day").toDate()
+    : (timestamp ?? new Date())
+
   const record: PunchRecord = {
     id: createId(),
     type,
-    timestamp: timestamp.toISOString(),
+    timestamp: effectiveTimestamp.toISOString(),
+    holiday: isHoliday,
   }
 
   const saved = await createPunchRecord(record)

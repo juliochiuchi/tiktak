@@ -12,6 +12,7 @@ import {
   getRecordsForDay,
   getWorkedMinutesForDay,
   getWorkedMinutesForDayClosed,
+  hasHolidayRecordForDay,
 } from "@/lib/punch"
 import { dayjs } from "@/lib/dayjs"
 import { parseTimeInput } from "@/lib/time-input"
@@ -34,7 +35,7 @@ export function PointPage({ activeDayKey }: PointPageProps) {
   const { toast } = useToast()
   const [now, setNow] = React.useState(() => new Date())
   const [editingId, setEditingId] = React.useState<string | null>(null)
-  const [draftType, setDraftType] = React.useState<"in" | "out">("in")
+  const [draftType, setDraftType] = React.useState<"in" | "out" | "holiday">("in")
   const [draftDate, setDraftDate] = React.useState<Date>(() => new Date())
   const [draftTime, setDraftTime] = React.useState("00:00")
 
@@ -108,23 +109,42 @@ export function PointPage({ activeDayKey }: PointPageProps) {
 
   async function saveEdit() {
     if (!editingId) return
+    const record = records.find((item) => item.id === editingId)
+    if (!record) return
+    const isHoliday = draftType === "holiday"
+    const dayKey = getDayKey(new Date(record.timestamp))
+
+    if (isHoliday && hasHolidayRecordForDay(records, dayKey, editingId)) {
+      toast({
+        title: "Não permitido",
+        description: "Esse dia já possui um feriado cadastrado.",
+        variant: "error",
+      })
+      return
+    }
+
     const time = parseTimeInput(draftTime)
-    if (!time) return
-    const next = dayjs(draftDate)
-      .hour(time.hours)
-      .minute(time.minutes)
-      .second(0)
-      .millisecond(0)
-      .toDate()
+    if (!isHoliday && !time) return
+    const next = isHoliday
+      ? dayjs(record.timestamp).startOf("day").toDate()
+      : dayjs(record.timestamp)
+          .hour(time!.hours)
+          .minute(time!.minutes)
+          .second(0)
+          .millisecond(0)
+          .toDate()
 
     try {
       await updateRecord(editingId, {
         type: draftType,
         timestamp: next.toISOString(),
+        holiday: isHoliday,
       })
       toast({
         title: "Sucesso!",
-        description: `${draftType === "in" ? "Entrada" : "Saída"} atualizada para ${formatClockTime(next)}.`,
+        description: isHoliday
+          ? "Feriado atualizado para o dia."
+          : `${draftType === "in" ? "Entrada" : "Saída"} atualizada para ${formatClockTime(next)}.`,
         variant: "success",
       })
       setEditingId(null)
@@ -153,25 +173,25 @@ export function PointPage({ activeDayKey }: PointPageProps) {
       }
 
   async function handleHolidayPunch() {
-    const entryTimestamp = dayjs(dayDate)
-      .hour(7)
-      .minute(0)
-      .second(0)
-      .millisecond(0)
-      .toDate()
-    const exitTimestamp = dayjs(dayDate)
-      .hour(15)
-      .minute(0)
-      .second(0)
-      .millisecond(0)
+    const dayKey = getDayKey(dayDate)
+    if (hasHolidayRecordForDay(records, dayKey)) {
+      toast({
+        title: "Não permitido",
+        description: "Esse dia já possui um feriado cadastrado.",
+        variant: "error",
+      })
+      return
+    }
+
+    const holidayTimestamp = dayjs(dayDate)
+      .startOf("day")
       .toDate()
 
     try {
-      await addRecord("in", entryTimestamp)
-      await addRecord("out", exitTimestamp)
+      await addRecord("holiday", holidayTimestamp)
       toast({
         title: "Sucesso!",
-        description: "Feriado registrado: 07:00 às 15:00 (8h trabalhadas).",
+        description: "Feriado registrado para o dia.",
         variant: "success",
       })
     } catch {
@@ -238,7 +258,7 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                 className="h-11 w-full justify-center rounded-2xl px-5 text-sm sm:w-auto sm:min-w-52"
               >
                 <CalendarX2 className="size-4" />
-                Registrar feriado (07:00 às 15:00)
+                Registrar feriado
               </Button>
             </div>
           </div>
@@ -326,22 +346,28 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                               className={
                                 record.type === "in"
                                   ? "grid size-11 shrink-0 place-items-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                  : "grid size-11 shrink-0 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                                  : record.type === "out"
+                                    ? "grid size-11 shrink-0 place-items-center rounded-2xl bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                                    : "grid size-11 shrink-0 place-items-center rounded-2xl bg-teal-500/15 text-teal-600 dark:text-teal-400"
                               }
                             >
                               {record.type === "in" ? (
                                 <LogIn className="size-4" />
-                              ) : (
+                              ) : record.type === "out" ? (
                                 <LogOut className="size-4" />
+                              ) : (
+                                <CalendarX2 className="size-4" />
                               )}
                             </div>
 
                             <div className="min-w-0 flex-1">
                               <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                                Hora da batida
+                                {record.type === "holiday" ? "Tipo" : "Hora da batida"}
                               </div>
                               <div className="mt-2 text-3xl font-semibold tracking-tight tabular-nums">
-                                {formatClockTime(recordDate)}
+                                {record.type === "holiday"
+                                  ? "Feriado"
+                                  : formatClockTime(recordDate)}
                               </div>
                             </div>
                           </div>
@@ -367,9 +393,12 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                                     await removeRecord(record.id)
                                     toast({
                                       title: "Sucesso!",
-                                      description: `${record.type === "in" ? "Entrada" : "Saída"} excluída das ${formatClockTime(
-                                        new Date(record.timestamp)
-                                      )}.`,
+                                      description:
+                                        record.type === "holiday"
+                                          ? "Feriado excluído do dia."
+                                          : `${record.type === "in" ? "Entrada" : "Saída"} excluída das ${formatClockTime(
+                                              new Date(record.timestamp)
+                                            )}.`,
                                       variant: "success",
                                     })
                                   } catch {
@@ -423,6 +452,15 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                                 >
                                   Saída
                                 </Button>
+                                <Button
+                                  type="button"
+                                  variant={draftType === "holiday" ? "secondary" : "outline"}
+                                  size="sm"
+                                  className="h-9 rounded-xl px-3"
+                                  onClick={() => setDraftType("holiday")}
+                                >
+                                  Feriado
+                                </Button>
                               </div>
 
                               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_8.5rem]">
@@ -433,11 +471,7 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                                   <Input
                                     type="date"
                                     value={getDayKey(draftDate)}
-                                    onChange={(event) => {
-                                      const next = parseDayKey(event.currentTarget.value)
-                                      if (!next) return
-                                      setDraftDate(next)
-                                    }}
+                                    disabled
                                     onKeyDown={handleEditKeyDown}
                                     className="h-10 rounded-xl bg-background"
                                   />
@@ -452,6 +486,7 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                                     onChange={setDraftTime}
                                     onKeyDown={handleEditKeyDown}
                                     placeholder="HH:MM"
+                                    disabled={draftType === "holiday"}
                                     className="h-10 rounded-xl bg-background"
                                   />
                                 </label>
@@ -459,7 +494,9 @@ export function PointPage({ activeDayKey }: PointPageProps) {
 
                               <div className="flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-muted-foreground">
-                                  Pressione Enter em data ou hora para salvar.
+                                  {draftType === "holiday"
+                                    ? "Registro de feriado não contabiliza horas."
+                                    : "Pressione Enter em data ou hora para salvar."}
                                 </p>
 
                                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
@@ -475,7 +512,7 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                                   <Button
                                     type="submit"
                                     className="h-9 w-full rounded-xl px-3 sm:w-auto"
-                                    disabled={!parseTimeInput(draftTime)}
+                                    disabled={draftType !== "holiday" && !parseTimeInput(draftTime)}
                                   >
                                     <Check className="size-4" />
                                     Salvar
@@ -488,7 +525,9 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                           <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
                             {record.type === "in"
                               ? "Batida de entrada registrada"
-                              : "Batida de saída registrada"}
+                              : record.type === "out"
+                                ? "Batida de saída registrada"
+                                : "Feriado registrado"}
                           </div>
                         )}
                       </div>

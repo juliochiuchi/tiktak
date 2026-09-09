@@ -21,7 +21,8 @@ export function usePunchRecords() {
     isLoading: snapshot.isLoading,
     error: snapshot.error,
     reload: reloadPunchRecords,
-    addRecord: (type: PunchType, timestamp?: Date) => addPunchRecord(type, timestamp),
+    addRecord: (type: PunchType, timestamp?: Date, holiday?: boolean) =>
+      addPunchRecord(type, timestamp, holiday),
     updateRecord: (id: string, updates: Partial<Omit<PunchRecord, "id">>) =>
       editPunchRecord(id, updates),
     removeRecord: (id: string) => removePunchRecord(id),

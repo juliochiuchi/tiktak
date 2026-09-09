@@ -1,11 +1,12 @@
 import { z } from "zod"
 
-export type PunchType = "in" | "out"
+export type PunchType = "in" | "out" | "holiday"
 
 export type PunchRecord = {
   id: string
   type: PunchType
   timestamp: string
+  holiday: boolean
 }
 
 export type TaskEntry = {
@@ -29,8 +30,9 @@ export type Project = {
 
 export const punchRecordSchema = z.object({
   id: z.string(),
-  type: z.enum(["in", "out"]),
+  type: z.enum(["in", "out", "holiday"]),
   timestamp: z.string(),
+  holiday: z.boolean().nullish().default(false),
 })
 
 export const punchRecordsSchema = z.array(punchRecordSchema)
