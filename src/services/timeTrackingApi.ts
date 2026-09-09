@@ -262,7 +262,7 @@ export async function createPunchRecord(record: PunchRecord): Promise<PunchRecor
   const resolved: PunchRecordRow = {
     ...row,
     punched_at: row.punched_at ?? rowToWrite.punched_at,
-    holiday: row.holiday ?? rowToWrite.holiday,
+    holiday: Boolean(row.holiday ?? rowToWrite.holiday),
     created_at: row.created_at ?? rowToWrite.created_at,
   }
   return punchRecordsSchema.element.parse(toPunchRecord(resolved))
@@ -294,8 +294,8 @@ export async function updatePunchRecord(
   if (!row) throw new Error(`PunchRecord not found after update: ${id}`)
   const resolved: PunchRecordRow = {
     ...row,
-    punched_at: row.punched_at ?? rowUpdates.punched_at ?? row.created_at ?? undefined,
-    holiday: row.holiday ?? rowUpdates.holiday ?? false,
+    punched_at: row.punched_at ?? rowUpdates.punched_at ?? row.created_at ?? null,
+    holiday: Boolean(row.holiday ?? rowUpdates.holiday ?? false),
     created_at: row.created_at,
   }
   return punchRecordsSchema.element.parse(toPunchRecord(resolved))

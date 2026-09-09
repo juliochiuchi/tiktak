@@ -48,7 +48,7 @@ export const punchRecordSchema = z.object({
   id: z.string(),
   type: z.enum(["in", "out", "holiday"]),
   timestamp: z.string(),
-  holiday: z.boolean().nullish().default(false),
+  holiday: z.boolean().nullish().default(false).transform((v) => Boolean(v)),
 })
 
 export const punchRecordsSchema = z.array(punchRecordSchema)
