@@ -28,6 +28,22 @@ export type Project = {
   createdAt: string
 }
 
+export type Vacation = {
+  id: string
+  initDate: string
+  endDate: string
+  createdAt: string
+}
+
+export const vacationSchema = z.object({
+  id: z.string(),
+  initDate: z.string(),
+  endDate: z.string(),
+  createdAt: z.string(),
+})
+
+export const vacationsSchema = z.array(vacationSchema)
+
 export const punchRecordSchema = z.object({
   id: z.string(),
   type: z.enum(["in", "out", "holiday"]),

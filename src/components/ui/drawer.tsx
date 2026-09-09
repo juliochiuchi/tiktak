@@ -23,18 +23,27 @@ function DrawerContent({
   side = "left",
   ...props
 }: React.ComponentProps<typeof Dialog.Content> & {
-  side?: "left" | "right"
+  side?: "left" | "right" | "bottom"
 }) {
+  const isHorizontal = side === "left" || side === "right"
+  const isVertical = side === "bottom"
+
   return (
     <Dialog.Portal>
       <DrawerOverlay />
       <Dialog.Content
         className={cn(
-          "fixed inset-y-0 z-50 w-[min(22rem,85vw)] overflow-y-auto border bg-card shadow-lg outline-none",
+          "fixed z-50 overflow-y-auto border bg-card shadow-lg outline-none",
+          isHorizontal &&
+            "inset-y-0 w-[min(22rem,85vw)]",
+          isVertical &&
+            "inset-x-0 bottom-0 max-h-[85vh] w-full rounded-t-3xl border-b-0",
           side === "left" &&
             "left-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
           side === "right" &&
             "right-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
+          side === "bottom" &&
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
           className
         )}
         {...props}

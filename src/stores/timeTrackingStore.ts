@@ -4,23 +4,30 @@ import {
   type PunchRecord,
   type PunchType,
   type TaskEntry,
+  type Vacation,
   createId,
 } from "@/lib/time-tracking"
 import {
   createProject,
   createPunchRecord,
   createTaskEntry,
+  createVacation,
   deletePunchRecord,
   deleteTaskEntry,
+  deleteVacation,
   listProjects,
   listPunchRecords,
   listTaskEntries,
+  listVacations,
   migrateLocalPunchRecordsToSupabase,
   migrateLocalTaskEntriesToSupabase,
   upsertProjectsFromNames,
   updatePunchRecord,
   updateTaskEntry,
+  updateVacation,
 } from "@/services/timeTrackingApi"
+import { hasHolidayRecordForDay } from "@/lib/punch"
+import { getDayKey } from "@/lib/time"
 
 type TaskEntriesState = {
   entries: TaskEntry[]
@@ -40,13 +47,21 @@ type ProjectsState = {
   error: unknown
 }
 
+type VacationsState = {
+  vacations: Vacation[]
+  isLoading: boolean
+  error: unknown
+}
+
 let taskEntriesState: TaskEntriesState = { entries: [], isLoading: true, error: null }
 let punchRecordsState: PunchRecordsState = { records: [], isLoading: true, error: null }
 let projectsState: ProjectsState = { projects: [], isLoading: true, error: null }
+let vacationsState: VacationsState = { vacations: [], isLoading: true, error: null }
 
 const taskEntriesListeners = new Set<() => void>()
 const punchRecordsListeners = new Set<() => void>()
 const projectsListeners = new Set<() => void>()
+const vacationsListeners = new Set<() => void>()
 
 function notifyTaskEntries() {
   for (const listener of taskEntriesListeners) listener()
@@ -58,6 +73,10 @@ function notifyPunchRecords() {
 
 function notifyProjects() {
   for (const listener of projectsListeners) listener()
+}
+
+function notifyVacations() {
+  for (const listener of vacationsListeners) listener()
 }
 
 export function subscribeTaskEntries(listener: () => void) {
@@ -85,6 +104,15 @@ export function subscribeProjects(listener: () => void) {
 
 export function getProjectsSnapshot() {
   return projectsState
+}
+
+export function subscribeVacations(listener: () => void) {
+  vacationsListeners.add(listener)
+  return () => vacationsListeners.delete(listener)
+}
+
+export function getVacationsSnapshot() {
+  return vacationsState
 }
 
 export async function reloadTaskEntries(): Promise<void> {
@@ -127,6 +155,19 @@ export async function reloadPunchRecords(): Promise<void> {
     punchRecordsState = { ...punchRecordsState, isLoading: false, error }
   }
   notifyPunchRecords()
+}
+
+export async function reloadVacations(): Promise<void> {
+  vacationsState = { ...vacationsState, isLoading: true, error: null }
+  notifyVacations()
+
+  try {
+    const vacations = await listVacations()
+    vacationsState = { vacations, isLoading: false, error: null }
+  } catch (error) {
+    vacationsState = { ...vacationsState, isLoading: false, error }
+  }
+  notifyVacations()
 }
 
 export async function addTaskEntry(input: Omit<TaskEntry, "id" | "createdAt">): Promise<TaskEntry> {
@@ -185,6 +226,17 @@ export async function addPunchRecord(
   const effectiveTimestamp = isHoliday
     ? dayjs(timestamp).startOf("day").toDate()
     : (timestamp ?? new Date())
+  const dayKey = getDayKey(effectiveTimestamp)
+
+  if (!isHoliday && hasHolidayRecordForDay(punchRecordsState.records, dayKey)) {
+    throw new Error(
+      "Este dia já possui feriado cadastrado. Não é permitido bater ponto."
+    )
+  }
+
+  if (isHoliday && hasHolidayRecordForDay(punchRecordsState.records, dayKey)) {
+    throw new Error("Este dia já possui um feriado cadastrado.")
+  }
 
   const record: PunchRecord = {
     id: createId(),
@@ -206,6 +258,24 @@ export async function editPunchRecord(
   id: string,
   updates: Partial<Omit<PunchRecord, "id">>
 ): Promise<PunchRecord> {
+  const existing = punchRecordsState.records.find((r) => r.id === id)
+  if (existing) {
+    const nextTimestamp = updates.timestamp ?? existing.timestamp
+    const nextType = updates.type ?? existing.type
+    const nextIsHoliday = updates.holiday ?? (nextType === "holiday")
+    const dayKey = getDayKey(new Date(nextTimestamp))
+
+    if (!nextIsHoliday && hasHolidayRecordForDay(punchRecordsState.records, dayKey, id)) {
+      throw new Error(
+        "Este dia já possui feriado cadastrado. Não é permitido alterar para batida de ponto."
+      )
+    }
+
+    if (nextIsHoliday && hasHolidayRecordForDay(punchRecordsState.records, dayKey, id)) {
+      throw new Error("Este dia já possui um feriado cadastrado.")
+    }
+  }
+
   const saved = await updatePunchRecord(id, updates)
   punchRecordsState = {
     ...punchRecordsState,
@@ -262,8 +332,68 @@ export async function addProjectByName(name: string): Promise<Project> {
   }
 }
 
+type CreateVacationInput = {
+  initDate: string
+  endDate: string
+}
+
+export async function addVacation(input: CreateVacationInput): Promise<Vacation> {
+  const now = new Date()
+  const vacation: Vacation = {
+    id: createId(),
+    initDate: input.initDate,
+    endDate: input.endDate,
+    createdAt: now.toISOString(),
+  }
+
+  const saved = await createVacation(vacation)
+  vacationsState = {
+    ...vacationsState,
+    vacations: [saved, ...vacationsState.vacations.filter((v) => v.id !== saved.id)],
+  }
+  notifyVacations()
+  return saved
+}
+
+type UpdateVacationInput = {
+  id: string
+  initDate: string
+  endDate: string
+}
+
+export async function updateVacationById(input: UpdateVacationInput): Promise<Vacation> {
+  const existing = vacationsState.vacations.find((v) => v.id === input.id)
+  if (!existing) {
+    throw new Error("Vacation not found")
+  }
+  const updated: Vacation = {
+    ...existing,
+    initDate: input.initDate,
+    endDate: input.endDate,
+  }
+  const saved = await updateVacation(updated)
+  vacationsState = {
+    ...vacationsState,
+    vacations: vacationsState.vacations.map((v) =>
+      v.id === saved.id ? saved : v,
+    ),
+  }
+  notifyVacations()
+  return saved
+}
+
+export async function removeVacation(id: string): Promise<void> {
+  await deleteVacation(id)
+  vacationsState = {
+    ...vacationsState,
+    vacations: vacationsState.vacations.filter((v) => v.id !== id),
+  }
+  notifyVacations()
+}
+
 if (typeof window !== "undefined") {
   void reloadTaskEntries()
   void reloadPunchRecords()
   void reloadProjects()
+  void reloadVacations()
 }

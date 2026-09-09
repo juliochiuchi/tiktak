@@ -18,6 +18,7 @@ import {
   Search,
   Copy,
   ListChecks,
+  PlaneTakeoff,
 } from "lucide-react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -60,6 +61,7 @@ import { useToast } from "@/hooks/use-toast"
 import { usePunchRecords } from "@/hooks/use-punch-records"
 import { useTaskEntries } from "@/hooks/use-task-entries"
 import { useProjects } from "@/hooks/use-projects"
+import { useVacations } from "@/hooks/use-vacations"
 import {
   getRecordsForDay,
   getWorkedMinutesForDay,
@@ -79,6 +81,11 @@ import {
   getDayKeysInRange,
   parseDayKey,
 } from "@/lib/time"
+import {
+  isDayInVacation,
+  getVacationForDay,
+  hasVacationOverlap,
+} from "@/lib/vacations"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/workday-v2")({
@@ -157,6 +164,7 @@ type WeekDay = {
   hasPunches: boolean
   hasTasks: boolean
   isHoliday: boolean
+  isVacation: boolean
   workedMinutes: number
   taskMinutes: number
 }
@@ -168,10 +176,12 @@ function WorkdayV2() {
   const [now, setNow] = React.useState(() => new Date())
   const [punchDrawerOpen, setPunchDrawerOpen] = React.useState(false)
   const [tasksDrawerOpen, setTasksDrawerOpen] = React.useState(false)
+  const [vacationDrawerOpen, setVacationDrawerOpen] = React.useState(false)
 
   const { records, reload: reloadPunchRecords } = usePunchRecords()
   const { entries, reload: reloadTaskEntries } = useTaskEntries()
   const { reload: reloadProjects } = useProjects()
+  const { vacations, reload: reloadVacations } = useVacations()
 
   const selectedDayKey = getDayKey(selectedDate)
 
@@ -184,7 +194,8 @@ function WorkdayV2() {
     void reloadPunchRecords()
     void reloadTaskEntries()
     void reloadProjects()
-  }, [reloadPunchRecords, reloadTaskEntries, reloadProjects])
+    void reloadVacations()
+  }, [reloadPunchRecords, reloadTaskEntries, reloadProjects, reloadVacations])
 
   const { weekStart, weekEnd, weekDayKeys } = React.useMemo(() => {
     const weekStart = dayjs(selectedDate).startOf("week").toDate()
@@ -210,11 +221,12 @@ function WorkdayV2() {
         hasPunches: dayPunches.length > 0,
         hasTasks: dayTasks.length > 0,
         isHoliday: isHolidayDay(records, dayKey),
+        isVacation: isDayInVacation(vacations, dayKey),
         workedMinutes: getWorkedMinutesForDayClosed(records, dayKey),
         taskMinutes: getMinutesForDate(entries, dayKey),
       }
     })
-  }, [weekDayKeys, records, entries, todayKey, selectedDayKey])
+  }, [weekDayKeys, records, entries, vacations, todayKey, selectedDayKey])
 
   const todayRecords = getRecordsForDay(records, selectedDayKey).sort(
     (a, b) => (a.timestamp < b.timestamp ? -1 : 1)
@@ -302,18 +314,29 @@ function WorkdayV2() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-          <div className="text-sm font-medium text-muted-foreground">
-            Dia ativo
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:gap-3">
+          <div className="space-y-1.5">
+            <div className="text-sm font-medium text-muted-foreground">
+              Dia ativo
+            </div>
+            <DatePicker
+              value={selectedDate}
+              onChange={(next) => {
+                if (!next) return
+                setSelectedDate(next)
+              }}
+              className="h-11 w-full rounded-2xl sm:w-44 sm:shrink-0"
+            />
           </div>
-          <DatePicker
-            value={selectedDate}
-            onChange={(next) => {
-              if (!next) return
-              setSelectedDate(next)
-            }}
-            className="h-11 w-full rounded-2xl sm:w-46 sm:shrink-0"
-          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 justify-center gap-2 rounded-2xl px-4 sm:px-5 sm:self-end"
+            onClick={() => setVacationDrawerOpen(true)}
+          >
+            <PlaneTakeoff className="size-4" />
+            Gerenciar férias
+          </Button>
         </div>
       </header>
 
@@ -359,12 +382,15 @@ function WorkdayV2() {
                 onClick={() => handleSelectWeekDay(day.dayKey)}
                 className={cn(
                   "group relative flex flex-col items-center gap-1 rounded-2xl border p-2 sm:p-3 transition-all cursor-pointer",
+                  day.isVacation && !day.isSelected && !day.isHoliday && "border-purple-300 bg-purple-50 dark:border-purple-500/40 dark:bg-purple-500/10",
                   day.isHoliday && !day.isSelected && "border-teal-300 bg-teal-50 dark:border-teal-500/40 dark:bg-teal-500/10",
                   day.isSelected
                     ? "border-primary bg-primary/5 ring-2 ring-primary/30"
                     : day.isHoliday
                       ? "border-teal-300 bg-teal-50 hover:bg-teal-100 dark:border-teal-500/40 dark:bg-teal-500/10 dark:hover:bg-teal-500/20"
-                      : "border-border/60 hover:border-border hover:bg-muted/40"
+                      : day.isVacation
+                        ? "border-purple-300 bg-purple-50 hover:bg-purple-100 dark:border-purple-500/40 dark:bg-purple-500/10 dark:hover:bg-purple-500/20"
+                        : "border-border/60 hover:border-border hover:bg-muted/40"
                 )}
               >
                 {day.isHoliday && (
@@ -372,6 +398,13 @@ function WorkdayV2() {
                     className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-teal-600 px-2 py-0 text-[0.55rem] font-semibold uppercase tracking-wider text-white shadow-sm dark:bg-teal-500 dark:text-teal-950"
                   >
                     Feriado
+                  </Badge>
+                )}
+                {day.isVacation && !day.isHoliday && (
+                  <Badge
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-purple-600 px-2 py-0 text-[0.55rem] font-semibold uppercase tracking-wider text-white shadow-sm dark:bg-purple-500 dark:text-purple-950"
+                  >
+                    Férias
                   </Badge>
                 )}
                 <span
@@ -383,7 +416,9 @@ function WorkdayV2() {
                         ? "text-foreground"
                         : day.isHoliday
                           ? "text-teal-700 dark:text-teal-300"
-                          : "text-muted-foreground"
+                          : day.isVacation
+                            ? "text-purple-700 dark:text-purple-300"
+                            : "text-muted-foreground"
                   )}
                 >
                   {day.dayName}
@@ -399,7 +434,12 @@ function WorkdayV2() {
                     day.isHoliday &&
                     !day.isToday &&
                     !day.isSelected &&
-                    "bg-teal-600 text-white dark:bg-teal-500 dark:text-teal-950"
+                    "bg-teal-600 text-white dark:bg-teal-500 dark:text-teal-950",
+                    day.isVacation &&
+                    !day.isToday &&
+                    !day.isSelected &&
+                    !day.isHoliday &&
+                    "bg-purple-600 text-white dark:bg-purple-500 dark:text-purple-950"
                   )}
                 >
                   {day.dayNumber}
@@ -410,9 +450,11 @@ function WorkdayV2() {
                       "size-1.5 rounded-full sm:size-2",
                       day.isHoliday
                         ? "bg-teal-600"
-                        : day.hasPunches
-                          ? "bg-emerald-500"
-                          : "bg-transparent"
+                        : day.isVacation
+                          ? "bg-purple-600"
+                          : day.hasPunches
+                            ? "bg-emerald-500"
+                            : "bg-transparent"
                     )}
                     aria-hidden
                   />
@@ -429,10 +471,12 @@ function WorkdayV2() {
                     "mt-1 line-clamp-1 text-[0.6rem] font-medium sm:text-[0.7rem]",
                     day.isHoliday
                       ? "text-teal-700 dark:text-teal-300"
-                      : "text-muted-foreground"
+                      : day.isVacation
+                        ? "text-purple-700 dark:text-purple-300"
+                        : "text-muted-foreground"
                   )}
                 >
-                  {formatDurationMinutes(day.workedMinutes)}
+                  {day.isVacation ? "Férias" : formatDurationMinutes(day.workedMinutes)}
                 </div>
               </button>
             ))}
@@ -592,6 +636,7 @@ function WorkdayV2() {
         onOpenChange={setPunchDrawerOpen}
         activeDayKey={selectedDayKey}
         selectedDate={selectedDate}
+        vacations={vacations}
       />
 
       <TasksDrawer
@@ -599,8 +644,324 @@ function WorkdayV2() {
         onOpenChange={setTasksDrawerOpen}
         activeDayKey={selectedDayKey}
         selectedDate={selectedDate}
+        vacations={vacations}
+      />
+
+      <VacationDrawer
+        open={vacationDrawerOpen}
+        onOpenChange={setVacationDrawerOpen}
       />
     </div>
+  )
+}
+
+type VacationDrawerProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+function VacationDrawer({
+  open,
+  onOpenChange,
+}: VacationDrawerProps) {
+  const { vacations, addVacation, updateVacation, removeVacation } = useVacations()
+  const { toast } = useToast()
+  const [initDate, setInitDate] = React.useState<Date | undefined>(undefined)
+  const [endDate, setEndDate] = React.useState<Date | undefined>(undefined)
+  const [editingId, setEditingId] = React.useState<string | null>(null)
+  const [submitting, setSubmitting] = React.useState(false)
+
+  function handleReset() {
+    setInitDate(undefined)
+    setEndDate(undefined)
+    setEditingId(null)
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      handleReset()
+    }
+    onOpenChange(next)
+  }
+
+  function startEdit(vacation: import("@/lib/time-tracking").Vacation) {
+    setEditingId(vacation.id)
+    setInitDate(dayjs(vacation.initDate).toDate())
+    setEndDate(dayjs(vacation.endDate).toDate())
+  }
+
+  async function handleSave() {
+    if (!initDate || !endDate) {
+      toast({
+        title: "Datas obrigatórias",
+        description: "Informe a data inicial e final das férias.",
+        variant: "error",
+      })
+      return
+    }
+
+    const initDateKey = getDayKey(initDate)
+    const endDateKey = getDayKey(endDate)
+
+    if (dayjs(initDate).isAfter(dayjs(endDate))) {
+      toast({
+        title: "Data inválida",
+        description: "A data inicial deve ser anterior ou igual à data final.",
+        variant: "error",
+      })
+      return
+    }
+
+    if (hasVacationOverlap(vacations, initDateKey, endDateKey, editingId ?? undefined)) {
+      toast({
+        title: "Período conflitante",
+        description: "Já existe um registro de férias dentro deste intervalo.",
+        variant: "error",
+      })
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      if (editingId) {
+        await updateVacation({
+          id: editingId,
+          initDate: initDateKey,
+          endDate: endDateKey,
+        })
+        toast({
+          title: "Sucesso!",
+          description: "Período de férias atualizado com sucesso.",
+          variant: "success",
+        })
+      } else {
+        await addVacation({
+          initDate: initDateKey,
+          endDate: endDateKey,
+        })
+        toast({
+          title: "Sucesso!",
+          description: "Período de férias cadastrado com sucesso.",
+          variant: "success",
+        })
+      }
+      handleReset()
+    } catch {
+      toast({
+        title: "Não foi possível salvar",
+        description: "Tente novamente.",
+        variant: "error",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      if (editingId === id) {
+        handleReset()
+      }
+      await removeVacation(id)
+      toast({
+        title: "Sucesso!",
+        description: "Período de férias removido.",
+        variant: "success",
+      })
+    } catch {
+      toast({
+        title: "Não foi possível remover",
+        description: "Tente novamente.",
+        variant: "error",
+      })
+    }
+  }
+
+  const labelClassName = "text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+
+  return (
+    <Drawer.Root open={open} onOpenChange={handleOpenChange}>
+      <DrawerContent side="bottom" className="p-0">
+        <div className="mx-auto mt-3 h-1.5 w-14 shrink-0 rounded-full bg-muted" />
+        <div className="flex h-16 shrink-0 items-center justify-between border-b px-5 pt-2">
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2">
+              <PlaneTakeoff className="size-4 text-primary" />
+              <span className="text-sm font-semibold tracking-tight">
+                Gerenciar férias
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {editingId ? "Editando período de férias" : "Cadastre, consulte e edite períodos de férias"}
+            </div>
+          </div>
+          <Drawer.Close asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="rounded-xl"
+            >
+              <span className="sr-only">Fechar</span>
+              <X className="size-4" />
+            </Button>
+          </Drawer.Close>
+        </div>
+
+        <div className="space-y-6 p-5 pb-10">
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold tracking-tight text-muted-foreground">
+                {editingId ? "EDITAR PERÍODO" : "NOVO PERÍODO"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Defina o intervalo de datas das férias.
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <span className={labelClassName}>Data inicial</span>
+                <DatePicker
+                  value={initDate}
+                  onChange={setInitDate}
+                  className="h-11 w-full rounded-2xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <span className={labelClassName}>Data final</span>
+                <DatePicker
+                  value={endDate}
+                  onChange={setEndDate}
+                  className="h-11 w-full rounded-2xl"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              {editingId ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-11 w-full rounded-2xl px-5 sm:w-auto"
+                  onClick={handleReset}
+                >
+                  <X className="size-4" />
+                  Cancelar edição
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl px-5 sm:w-auto"
+                  onClick={handleReset}
+                >
+                  Limpar
+                </Button>
+              )}
+              <Button
+                type="button"
+                className="h-11 w-full rounded-2xl px-5 sm:w-auto"
+                onClick={() => void handleSave()}
+                disabled={submitting}
+              >
+                <Check className="size-4" />
+                {editingId ? "Atualizar férias" : "Salvar férias"}
+              </Button>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold tracking-tight text-muted-foreground">
+                PERÍODOS CADASTRADOS
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Histórico de férias registradas.
+              </p>
+            </div>
+
+            {vacations.length === 0 ? (
+              <div className="rounded-2xl border border-border/60 bg-card p-5 text-sm text-muted-foreground">
+                Nenhum período de férias cadastrado.
+              </div>
+            ) : (
+              <ul className="grid gap-3">
+                {vacations.map((vacation) => {
+                  const init = dayjs(vacation.initDate).toDate()
+                  const end = dayjs(vacation.endDate).toDate()
+                  const days = getDayKeysInRange(init, end).length
+                  const isEditing = editingId === vacation.id
+                  return (
+                    <li key={vacation.id}>
+                      <Card
+                        className={cn(
+                          "overflow-hidden border-border/70 bg-card/90",
+                          isEditing &&
+                            "ring-2 ring-purple-500/40 border-purple-400/60"
+                        )}
+                      >
+                        <CardContent className="flex items-center justify-between gap-3 p-4">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                                <PlaneTakeoff className="size-4" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                  {isEditing ? "Editando" : "Período"}
+                                </div>
+                                <div className="mt-1 text-base font-semibold tracking-tight">
+                                  {dayjs(init).format("DD/MM/YYYY")} —{" "}
+                                  {dayjs(end).format("DD/MM/YYYY")}
+                                </div>
+                              </div>
+                              <Badge className="rounded-full bg-purple-500/15 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400">
+                                {days} dia{days !== 1 ? "s" : ""}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              variant={isEditing ? "secondary" : "ghost"}
+                              size="icon-sm"
+                              className="rounded-xl text-purple-600 hover:text-purple-600 dark:text-purple-400"
+                              aria-label={isEditing ? "Editando" : "Editar férias"}
+                              onClick={() => startEdit(vacation)}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <ConfirmDialog
+                              title="Remover férias?"
+                              description="Esta ação não pode ser desfeita."
+                              confirmLabel="Remover"
+                              onConfirm={() => void handleDelete(vacation.id)}
+                            >
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                className="shrink-0 rounded-xl text-destructive hover:text-destructive"
+                                aria-label="Excluir férias"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </ConfirmDialog>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      </DrawerContent>
+    </Drawer.Root>
   )
 }
 
@@ -609,6 +970,7 @@ type PunchDrawerProps = {
   onOpenChange: (open: boolean) => void
   activeDayKey: string
   selectedDate: Date
+  vacations: import("@/lib/time-tracking").Vacation[]
 }
 
 function PunchDrawer({
@@ -616,8 +978,11 @@ function PunchDrawer({
   onOpenChange,
   activeDayKey,
   selectedDate,
+  vacations,
 }: PunchDrawerProps) {
+  const dayIsVacation = isDayInVacation(vacations, activeDayKey)
   const { records, addRecord, removeRecord, updateRecord } = usePunchRecords()
+  const dayIsHoliday = hasHolidayRecordForDay(records, activeDayKey)
   const { toast } = useToast()
   const [now, setNow] = React.useState(() => new Date())
   const [editingId, setEditingId] = React.useState<string | null>(null)
@@ -833,46 +1198,80 @@ function PunchDrawer({
             <div className="mt-2 text-xs text-muted-foreground">
               {formatDateWithWeekday(dayDate)}
             </div>
-            <div className="mt-4 space-y-2">
-              <Button
-                onClick={async () => {
-                  const timestamp = isToday
-                    ? dayjs(now).second(0).millisecond(0).toDate()
-                    : dayjs(dayDate)
-                      .hour(now.getHours())
-                      .minute(now.getMinutes())
-                      .second(0)
-                      .millisecond(0)
-                      .toDate()
-                  try {
-                    await addRecord(nextType, timestamp)
-                    toast({
-                      title: "Sucesso!",
-                      description: `${nextType === "in" ? "Entrada" : "Saída"} registrada às ${formatClockTime(timestamp)}.`,
-                      variant: "success",
-                    })
-                  } catch {
-                    toast({
-                      title: "Não foi possível registrar",
-                      description: "Tente novamente.",
-                      variant: "error",
-                    })
-                  }
-                }}
-                className={`${primaryAction.className} w-full justify-center px-5`}
-              >
-                <primaryAction.Icon className="size-4" />
-                {primaryAction.label}
-              </Button>
-              <Button
-                onClick={handleHolidayPunch}
-                variant="outline"
-                className="h-11 w-full justify-center rounded-2xl px-5 text-sm"
-              >
-                <CalendarX2 className="size-4" />
-                Registrar feriado
-              </Button>
-            </div>
+            {dayIsVacation ? (
+              <div className="rounded-2xl border border-purple-200 bg-purple-50 p-4 text-center dark:border-purple-500/40 dark:bg-purple-500/10">
+                <div className="grid size-10 mx-auto place-items-center rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                  <PlaneTakeoff className="size-5" />
+                </div>
+                <div className="mt-2 text-sm font-semibold text-purple-700 dark:text-purple-300">
+                  Período de férias
+                </div>
+                <p className="mt-1 text-xs text-purple-600/80 dark:text-purple-300/80">
+                  Não é permitido bater ponto ou registrar feriado neste dia.
+                </p>
+              </div>
+            ) : dayIsHoliday ? (
+              <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-center dark:border-teal-500/40 dark:bg-teal-500/10">
+                <div className="grid size-10 mx-auto place-items-center rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400">
+                  <CalendarX2 className="size-5" />
+                </div>
+                <div className="mt-2 text-sm font-semibold text-teal-700 dark:text-teal-300">
+                  Feriado registrado
+                </div>
+                <p className="mt-1 text-xs text-teal-600/80 dark:text-teal-300/80">
+                  Este dia já está marcado como feriado. Não é permitido bater ponto ou cadastrar novo feriado.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-2">
+                <Button
+                  onClick={async () => {
+                    if (hasHolidayRecordForDay(records, getDayKey(dayDate))) {
+                      toast({
+                        title: "Não permitido",
+                        description: "Este dia já possui feriado cadastrado. Não é permitido bater ponto.",
+                        variant: "error",
+                      })
+                      return
+                    }
+                    const timestamp = isToday
+                      ? dayjs(now).second(0).millisecond(0).toDate()
+                      : dayjs(dayDate)
+                        .hour(now.getHours())
+                        .minute(now.getMinutes())
+                        .second(0)
+                        .millisecond(0)
+                        .toDate()
+                    try {
+                      await addRecord(nextType, timestamp)
+                      toast({
+                        title: "Sucesso!",
+                        description: `${nextType === "in" ? "Entrada" : "Saída"} registrada às ${formatClockTime(timestamp)}.`,
+                        variant: "success",
+                      })
+                    } catch {
+                      toast({
+                        title: "Não foi possível registrar",
+                        description: "Tente novamente.",
+                        variant: "error",
+                      })
+                    }
+                  }}
+                  className={`${primaryAction.className} w-full justify-center px-5`}
+                >
+                  <primaryAction.Icon className="size-4" />
+                  {primaryAction.label}
+                </Button>
+                <Button
+                  onClick={handleHolidayPunch}
+                  variant="outline"
+                  className="h-11 w-full justify-center rounded-2xl px-5 text-sm"
+                >
+                  <CalendarX2 className="size-4" />
+                  Registrar feriado
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="grid gap-3">
@@ -1019,36 +1418,6 @@ function PunchDrawer({
                                 }}
                               >
                                 <div className="flex flex-col gap-4">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    <Button
-                                      type="button"
-                                      variant={draftType === "in" ? "secondary" : "outline"}
-                                      size="sm"
-                                      className="h-9 rounded-xl px-3"
-                                      onClick={() => setDraftType("in")}
-                                    >
-                                      Entrada
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant={draftType === "out" ? "secondary" : "outline"}
-                                      size="sm"
-                                      className="h-9 rounded-xl px-3"
-                                      onClick={() => setDraftType("out")}
-                                    >
-                                      Saída
-                                    </Button>
-                                    <Button
-                                      type="button"
-                                      variant={draftType === "holiday" ? "secondary" : "outline"}
-                                      size="sm"
-                                      className="h-9 rounded-xl px-3"
-                                      onClick={() => setDraftType("holiday")}
-                                    >
-                                      Feriado
-                                    </Button>
-                                  </div>
-
                                   <div className="grid gap-3">
                                     <label className="space-y-1.5">
                                       <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
@@ -1135,6 +1504,7 @@ type TasksDrawerProps = {
   onOpenChange: (open: boolean) => void
   activeDayKey: string
   selectedDate: Date
+  vacations: import("@/lib/time-tracking").Vacation[]
 }
 
 function TasksDrawer({
@@ -1142,7 +1512,9 @@ function TasksDrawer({
   onOpenChange,
   activeDayKey,
   selectedDate,
+  vacations,
 }: TasksDrawerProps) {
+  const dayIsVacation = isDayInVacation(vacations, activeDayKey)
   const { entries, addEntry, removeEntry, updateEntry } = useTaskEntries()
   const { projects, addProject } = useProjects()
   const { toast } = useToast()
@@ -1367,36 +1739,50 @@ function TasksDrawer({
         </div>
 
         <div className="space-y-5 p-5">
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              className="h-11 w-full rounded-2xl px-5"
-              onClick={openCreate}
-            >
-              <Plus className="size-4" />
-              Nova tarefa
-            </Button>
-
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(event) => setQuery(event.currentTarget.value)}
-                placeholder="Buscar por descrição ou projeto"
-                className="h-11 rounded-2xl pl-10"
-              />
+          {dayIsVacation ? (
+            <div className="rounded-2xl border border-purple-200 bg-purple-50 p-4 text-center dark:border-purple-500/40 dark:bg-purple-500/10">
+              <div className="grid size-10 mx-auto place-items-center rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400">
+                <PlaneTakeoff className="size-5" />
+              </div>
+              <div className="mt-2 text-sm font-semibold text-purple-700 dark:text-purple-300">
+                Período de férias
+              </div>
+              <p className="mt-1 text-xs text-purple-600/80 dark:text-purple-300/80">
+                Não é permitido cadastrar ou editar tarefas neste dia.
+              </p>
             </div>
-            {query.trim() ? (
+          ) : (
+            <div className="flex flex-col gap-2">
               <Button
                 type="button"
-                variant="outline"
-                className="h-11 w-full rounded-2xl px-4"
-                onClick={() => setQuery("")}
+                className="h-11 w-full rounded-2xl px-5"
+                onClick={openCreate}
               >
-                Limpar
+                <Plus className="size-4" />
+                Nova tarefa
               </Button>
-            ) : null}
-          </div>
+
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(event) => setQuery(event.currentTarget.value)}
+                  placeholder="Buscar por descrição ou projeto"
+                  className="h-11 rounded-2xl pl-10"
+                />
+              </div>
+              {query.trim() ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 w-full rounded-2xl px-4"
+                  onClick={() => setQuery("")}
+                >
+                  Limpar
+                </Button>
+              ) : null}
+            </div>
+          )}
 
           {groups.length === 0 ? (
             <div className="rounded-2xl border border-border/60 bg-card p-6 text-sm text-muted-foreground">

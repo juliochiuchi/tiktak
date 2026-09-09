@@ -4,9 +4,12 @@ import {
   projectsSchema,
   punchRecordsSchema,
   taskEntriesSchema,
+  vacationSchema,
+  vacationsSchema,
   type Project,
   type PunchRecord,
   type TaskEntry,
+  type Vacation,
 } from "@/lib/time-tracking"
 import { supabaseHttp } from "@/services/supabaseHttp"
 
@@ -34,6 +37,13 @@ type PunchRecordRow = {
 type ProjectRow = {
   id: string
   name: string
+  created_at: string
+}
+
+type VacationRow = {
+  id: string
+  init_date: string
+  end_date: string
   created_at: string
 }
 
@@ -120,6 +130,24 @@ function toProjectRow(project: Project): ProjectRow {
     id: project.id,
     name: project.name,
     created_at: project.createdAt,
+  }
+}
+
+function toVacation(row: VacationRow): Vacation {
+  return {
+    id: row.id,
+    initDate: row.init_date ? dayjs(row.init_date).format("YYYY-MM-DD") : row.init_date,
+    endDate: row.end_date ? dayjs(row.end_date).format("YYYY-MM-DD") : row.end_date,
+    createdAt: row.created_at,
+  }
+}
+
+function toVacationRow(vacation: Vacation): VacationRow {
+  return {
+    id: vacation.id,
+    init_date: vacation.initDate,
+    end_date: vacation.endDate,
+    created_at: vacation.createdAt,
   }
 }
 
@@ -294,4 +322,37 @@ export async function migrateLocalPunchRecordsToSupabase(options?: {
     headers: { Prefer: "resolution=merge-duplicates" },
   })
   window.localStorage.removeItem(storageKey)
+}
+
+export async function listVacations(): Promise<Vacation[]> {
+  const response = await supabaseHttp.get<VacationRow[]>("/vacation", {
+    params: { select: "*", order: "init_date.desc" },
+  })
+  return vacationsSchema.parse(response.data.map(toVacation))
+}
+
+export async function createVacation(vacation: Vacation): Promise<Vacation> {
+  const response = await supabaseHttp.post<VacationRow[]>("/vacation", toVacationRow(vacation), {
+    params: { select: "*" },
+    headers: { Prefer: "return=representation" },
+  })
+  const row = response.data[0]
+  return vacationSchema.parse(toVacation(row))
+}
+
+export async function updateVacation(vacation: Vacation): Promise<Vacation> {
+  const response = await supabaseHttp.patch<VacationRow[]>(
+    "/vacation",
+    toVacationRow(vacation),
+    {
+      params: { id: `eq.${vacation.id}`, select: "*" },
+      headers: { Prefer: "return=representation" },
+    },
+  )
+  const row = response.data[0]
+  return vacationSchema.parse(toVacation(row))
+}
+
+export async function deleteVacation(id: string): Promise<void> {
+  await supabaseHttp.delete("/vacation", { params: { id: `eq.${id}` } })
 }

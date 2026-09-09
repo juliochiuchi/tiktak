@@ -33,6 +33,8 @@ type PointPageProps = {
 export function PointPage({ activeDayKey }: PointPageProps) {
   const { records, addRecord, removeRecord, updateRecord } = usePunchRecords()
   const { toast } = useToast()
+  const dayKeyForHolidayCheck = activeDayKey ?? getDayKey(new Date())
+  const dayIsHoliday = hasHolidayRecordForDay(records, dayKeyForHolidayCheck)
   const [now, setNow] = React.useState(() => new Date())
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [draftType, setDraftType] = React.useState<"in" | "out" | "holiday">("in")
@@ -222,44 +224,68 @@ export function PointPage({ activeDayKey }: PointPageProps) {
             </div>
 
             <div className="mt-6 w-full max-w-md space-y-2 sm:space-y-3">
-              <Button
-                onClick={async () => {
-                  const timestamp = isToday
-                    ? dayjs(now).second(0).millisecond(0).toDate()
-                    : dayjs(dayDate)
-                      .hour(now.getHours())
-                      .minute(now.getMinutes())
-                      .second(0)
-                      .millisecond(0)
-                      .toDate()
-                  try {
-                    await addRecord(nextType, timestamp)
-                    toast({
-                      title: "Sucesso!",
-                      description: `${nextType === "in" ? "Entrada" : "Saída"} registrada às ${formatClockTime(timestamp)}.`,
-                      variant: "success",
-                    })
-                  } catch {
-                    toast({
-                      title: "Não foi possível registrar",
-                      description: "Tente novamente.",
-                      variant: "error",
-                    })
-                  }
-                }}
-                className={`${primaryAction.className} w-full justify-center px-5 sm:w-auto sm:min-w-52`}
-              >
-                <primaryAction.Icon className="size-4" />
-                {primaryAction.label}
-              </Button>
-              <Button
-                onClick={handleHolidayPunch}
-                variant="outline"
-                className="h-11 w-full justify-center rounded-2xl px-5 text-sm sm:w-auto sm:min-w-52"
-              >
-                <CalendarX2 className="size-4" />
-                Registrar feriado
-              </Button>
+              {dayIsHoliday ? (
+                <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-center dark:border-teal-500/40 dark:bg-teal-500/10">
+                  <div className="grid size-10 mx-auto place-items-center rounded-xl bg-teal-500/15 text-teal-600 dark:text-teal-400">
+                    <CalendarX2 className="size-5" />
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-teal-700 dark:text-teal-300">
+                    Feriado registrado
+                  </div>
+                  <p className="mt-1 text-xs text-teal-600/80 dark:text-teal-300/80">
+                    Este dia já está marcado como feriado. Não é permitido bater ponto ou cadastrar novo feriado.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={async () => {
+                      if (hasHolidayRecordForDay(records, getDayKey(dayDate))) {
+                        toast({
+                          title: "Não permitido",
+                          description: "Este dia já possui feriado cadastrado. Não é permitido bater ponto.",
+                          variant: "error",
+                        })
+                        return
+                      }
+                      const timestamp = isToday
+                        ? dayjs(now).second(0).millisecond(0).toDate()
+                        : dayjs(dayDate)
+                          .hour(now.getHours())
+                          .minute(now.getMinutes())
+                          .second(0)
+                          .millisecond(0)
+                          .toDate()
+                      try {
+                        await addRecord(nextType, timestamp)
+                        toast({
+                          title: "Sucesso!",
+                          description: `${nextType === "in" ? "Entrada" : "Saída"} registrada às ${formatClockTime(timestamp)}.`,
+                          variant: "success",
+                        })
+                      } catch {
+                        toast({
+                          title: "Não foi possível registrar",
+                          description: "Tente novamente.",
+                          variant: "error",
+                        })
+                      }
+                    }}
+                    className={`${primaryAction.className} w-full justify-center px-5 sm:w-auto sm:min-w-52`}
+                  >
+                    <primaryAction.Icon className="size-4" />
+                    {primaryAction.label}
+                  </Button>
+                  <Button
+                    onClick={handleHolidayPunch}
+                    variant="outline"
+                    className="h-11 w-full justify-center rounded-2xl px-5 text-sm sm:w-auto sm:min-w-52"
+                  >
+                    <CalendarX2 className="size-4" />
+                    Registrar feriado
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardContent>
@@ -433,36 +459,6 @@ export function PointPage({ activeDayKey }: PointPageProps) {
                             }}
                           >
                             <div className="flex flex-col gap-4">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant={draftType === "in" ? "secondary" : "outline"}
-                                  size="sm"
-                                  className="h-9 rounded-xl px-3"
-                                  onClick={() => setDraftType("in")}
-                                >
-                                  Entrada
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={draftType === "out" ? "secondary" : "outline"}
-                                  size="sm"
-                                  className="h-9 rounded-xl px-3"
-                                  onClick={() => setDraftType("out")}
-                                >
-                                  Saída
-                                </Button>
-                                <Button
-                                  type="button"
-                                  variant={draftType === "holiday" ? "secondary" : "outline"}
-                                  size="sm"
-                                  className="h-9 rounded-xl px-3"
-                                  onClick={() => setDraftType("holiday")}
-                                >
-                                  Feriado
-                                </Button>
-                              </div>
-
                               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_8.5rem]">
                                 <label className="space-y-1.5">
                                   <span className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
