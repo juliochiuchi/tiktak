@@ -1,5 +1,4 @@
 import * as React from "react"
-import type { Vacation } from "@/lib/time-tracking"
 import {
   addVacation,
   getVacationsSnapshot,

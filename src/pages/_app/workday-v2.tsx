@@ -83,7 +83,6 @@ import {
 } from "@/lib/time"
 import {
   isDayInVacation,
-  getVacationForDay,
   hasVacationOverlap,
 } from "@/lib/vacations"
 import { cn } from "@/lib/utils"

@@ -1,5 +1,5 @@
 import { dayjs } from "@/lib/dayjs"
-import { getDayKey, getDayKeysInRange } from "@/lib/time"
+import { getDayKeysInRange } from "@/lib/time"
 import type { Vacation } from "@/lib/time-tracking"
 
 function normalizeDayKey(value: string): string {
